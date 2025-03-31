@@ -4,6 +4,8 @@
 
 The diagram presents a comprehensive architecture for a modern recruitment management system. This paper analyzes the architectural components, their relationships, and the system's overall organization. The architecture follows a modular approach, dividing the recruitment workflow into distinct functional areas while maintaining integration across the entire candidate journey.
 
+![Cognitive Hire Technology Concept](diagrams/concept.svg)
+
 ## 2. System Overview
 
 The architecture represents a full-stack recruitment platform with components spanning from authentication through the entire recruitment lifecycle. The system appears to be designed as a modular, service-oriented architecture with clearly defined functional boundaries. The layout suggests a thoughtful approach to recruitment workflows, with components organized by their role in the candidate acquisition and assessment process.
