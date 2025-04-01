@@ -1,165 +1,194 @@
 <mxfile host="65bd71144e">
-    <diagram id="U1vcYQol0Dq-Bb2WOaCl" name="Page-1">
-        <mxGraphModel dx="574" dy="817" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0">
+    <diagram id="U1vcYQol0Dq-Bb2WOaCl" name="Cognitive Hire Architecture">
+        <mxGraphModel dx="1114" dy="817" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0" adaptiveColors="none">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="2" value="Cognitive Hire - High Level Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" parent="1" vertex="1">
-                    <mxGeometry x="399.5" y="20" width="400.5" height="30" as="geometry"/>
+                <mxCell id="458" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor:#fff2cc;strokeColor:#d6b656;dashed=1;dashPattern=1 4;opacity=50;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="320" width="1080" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;fontSize=12;" parent="1" vertex="1">
+                <mxCell id="413" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="411" width="1080" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="425" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="653" width="1080" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="394" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;fontSize=12;" vertex="1" parent="1">
                     <mxGeometry x="40" y="70" width="1080" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="4" value="CLIENT APPLICATIONS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="386" value="Cognitive Hire - System Architecture" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="284.5" y="20" width="600" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="395" value="CLIENT APPLICATIONS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" vertex="1" parent="1">
                     <mxGeometry x="469.5" y="80" width="230" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="5" value="React PWA Frontend&lt;br&gt;(Responsive Design)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="396" value="React PWA Frontend&lt;br&gt;(Responsive Design)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
                     <mxGeometry x="200" y="110" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="6" value="Mobile Experience&lt;br&gt;(Browser-based)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="397" value="Mobile Experience&lt;br&gt;(Browser-based)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
                     <mxGeometry x="504.5" y="110" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="7" value="Admin Portal&lt;br&gt;(React)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="398" value="Admin Portal&lt;br&gt;(React)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
                     <mxGeometry x="800" y="110" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" edge="1">
+                <mxCell id="399" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;width=14;endSize=6.33;" edge="1" parent="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="579.5" y="170" as="sourcePoint"/>
                         <mxPoint x="579.5" y="210" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="9" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" parent="1" vertex="1">
+                <mxCell id="400" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
                     <mxGeometry x="40" y="210" width="1080" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="10" value="DELIVERY &amp; SECURITY" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" parent="1" vertex="1">
+                <mxCell id="401" value="DELIVERY &amp; SECURITY" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" vertex="1" parent="1">
                     <mxGeometry x="479" y="220" width="210" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="11" value="Azure Front Door&lt;br&gt;(CDN, Routing, WAF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="250" width="160" height="50" as="geometry"/>
+                <mxCell id="402" value="Azure Front Door&lt;br&gt;(CDN, Routing, WAF)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="242" y="250" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="Azure AD B2C&lt;br&gt;(Authentication, MFA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
-                    <mxGeometry x="504.5" y="250" width="160" height="50" as="geometry"/>
+                <mxCell id="403" value="Azure AD B2C&lt;br&gt;(Authentication, MFA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="454.5" y="250" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="13" value="Azure API Management&lt;br&gt;(Gateway, Docs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
-                    <mxGeometry x="769.5" y="250" width="160" height="50" as="geometry"/>
+                <mxCell id="404" value="Azure API Management&lt;br&gt;(Gateway, Docs)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="700" y="250" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="14" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" edge="1">
+                <mxCell id="405" value="Azure Key Vault&lt;br&gt;(Secrets Management)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="940" y="250" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="406" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;width=14;endSize=6.33;" edge="1" parent="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="579.5" y="310" as="sourcePoint"/>
                         <mxPoint x="579.5" y="350" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="15" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="350" width="1080" height="230" as="geometry"/>
+                <mxCell id="410" value="API Toggle" style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.twoWayArrow;dy=6;dx=22;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="930" y="421" width="100" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="DOMAIN-BASED MICROSERVICES (Azure Container Apps / FastAPI)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" parent="1" vertex="1">
-                    <mxGeometry x="379" y="360" width="410" height="20" as="geometry"/>
+                <mxCell id="411" value="Real" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="900" y="421" width="30" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="17" value="Candidate Service&lt;br&gt;- REST APIs&lt;br&gt;- WebSockets&lt;br&gt;- AI Matching" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="160" y="400" width="140" height="70" as="geometry"/>
+                <mxCell id="412" value="Mock" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="1030" y="421" width="30" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="18" value="Employer Service&lt;br&gt;- REST APIs&lt;br&gt;- WebSockets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="360" y="400" width="140" height="70" as="geometry"/>
+                <mxCell id="414" value="DOMAIN-BASED MICROSERVICES&amp;nbsp;&lt;div&gt;(Azure Container Apps / FastAPI)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="379" y="421" width="410" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="19" value="Job Service&lt;br&gt;- REST APIs&lt;br&gt;- Publishing&lt;br&gt;- Distribution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="560" y="400" width="140" height="70" as="geometry"/>
+                <mxCell id="415" value="Candidate Service&lt;br&gt;- REST APIs&lt;br&gt;- WebSockets&lt;br&gt;- AI Matching" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;align=center;fontStyle=0" vertex="1" parent="1">
+                    <mxGeometry x="160" y="461" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="20" value="Workflow Service&lt;br&gt;- Pipeline Tracking&lt;br&gt;- Approval Flows&lt;br&gt;- Orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="760" y="400" width="140" height="70" as="geometry"/>
+                <mxCell id="416" value="Employer Service&lt;br&gt;- REST APIs&lt;br&gt;- WebSockets" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="461" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="21" value="Interview Service&lt;br&gt;- Scheduling&lt;br&gt;- Calendar Integration&lt;br&gt;- Feedback Collection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="160" y="490" width="140" height="70" as="geometry"/>
+                <mxCell id="417" value="Job Service&lt;br&gt;- REST APIs&lt;br&gt;- Publishing&lt;br&gt;- Distribution" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="560" y="459" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="22" value="Notification Service&lt;br&gt;- Email, SMS, WhatsApp&lt;br&gt;- Templates&lt;br&gt;- Triggers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="360" y="490" width="140" height="70" as="geometry"/>
+                <mxCell id="418" value="Workflow Service&lt;br&gt;- Pipeline Tracking&lt;br&gt;- Approval Flows&lt;br&gt;- Orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="459" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="23" value="Reporting Service&lt;br&gt;- Analytics&lt;br&gt;- KPIs&lt;br&gt;- Custom Reports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="560" y="490" width="140" height="70" as="geometry"/>
+                <mxCell id="419" value="Interview Service&lt;br&gt;- Scheduling&lt;br&gt;- Calendar Integration&lt;br&gt;- Feedback Collection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="160" y="542" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="24" value="Payment Service&lt;br&gt;- Stripe Integration&lt;br&gt;- PayPal Integration&lt;br&gt;- Subscription Mgmt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="760" y="490" width="140" height="70" as="geometry"/>
+                <mxCell id="420" value="Notification Service&lt;br&gt;- Email, SMS, WhatsApp&lt;br&gt;- Templates&lt;br&gt;- Triggers" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="360" y="542" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="25" value="Search Service&lt;br&gt;- Advanced Query&lt;br&gt;- LinkedIn Integration&lt;br&gt;- Internet Search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="960" y="445" width="140" height="70" as="geometry"/>
+                <mxCell id="421" value="Reporting Service&lt;br&gt;- Analytics&lt;br&gt;- KPIs&lt;br&gt;- Custom Reports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="560" y="542" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="26" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" edge="1">
+                <mxCell id="422" value="Payment Service&lt;br&gt;- Stripe Integration&lt;br&gt;- PayPal Integration&lt;br&gt;- Subscription Mgmt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="760" y="542" width="140" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="423" value="Azure Event Grid&lt;br&gt;(Event Bus)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="1">
+                    <mxGeometry x="960" y="531" width="140" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="424" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;width=14;endSize=6.33;" edge="1" parent="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
-                        <mxPoint x="579.5" y="580" as="sourcePoint"/>
-                        <mxPoint x="579.5" y="620" as="targetPoint"/>
+                        <mxPoint x="579.5" y="616" as="sourcePoint"/>
+                        <mxPoint x="579.5" y="656" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="27" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="620" width="1080" height="100" as="geometry"/>
+                <mxCell id="426" value="DATA LAYER" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="504.5" y="663" width="160" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="28" value="DATA LAYER" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" parent="1" vertex="1">
-                    <mxGeometry x="504.5" y="630" width="160" height="20" as="geometry"/>
+                <mxCell id="427" value="Azure Cosmos DB&lt;br&gt;(NoSQL Data)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="200" y="693" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="29" value="Azure Cosmos DB&lt;br&gt;(NoSQL Data)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="660" width="160" height="50" as="geometry"/>
+                <mxCell id="428" value="Azure SQL Database&lt;br&gt;(Relational)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="504.5" y="693" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="30" value="Azure SQL Database&lt;br&gt;(Relational)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
-                    <mxGeometry x="504.5" y="660" width="160" height="50" as="geometry"/>
+                <mxCell id="429" value="Azure Blob Storage&lt;br&gt;(Resumes, Media)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="800" y="693" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="31" value="Azure Blob Storage&lt;br&gt;(Resumes, Media)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
-                    <mxGeometry x="769.5" y="660" width="160" height="50" as="geometry"/>
+                <mxCell id="430" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
+                    <mxGeometry x="40" y="773" width="1080" height="160" as="geometry"/>
                 </mxCell>
-                <mxCell id="32" value="" style="shape=flexArrow;endArrow=classic;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" edge="1">
-                    <mxGeometry width="50" height="50" relative="1" as="geometry">
-                        <mxPoint x="579.5" y="720" as="sourcePoint"/>
-                        <mxPoint x="579.5" y="760" as="targetPoint"/>
-                    </mxGeometry>
+                <mxCell id="431" value="INFRASTRUCTURE &amp; DEVOPS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=16;" vertex="1" parent="1">
+                    <mxGeometry x="469.5" y="783" width="270.5" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="33" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;dashed=1;dashPattern=1 2;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="760" width="1080" height="100" as="geometry"/>
+                <mxCell id="432" value="Azure Container Registry&lt;br&gt;(Container Management)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="813" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="34" value="INFRASTRUCTURE &amp; DEVOPS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" parent="1" vertex="1">
-                    <mxGeometry x="469.5" y="770" width="230" height="20" as="geometry"/>
+                <mxCell id="433" value="GitHub Actions&lt;br&gt;(CI/CD Pipeline)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="240" y="813" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="35" value="Azure Container Registry/Apps&lt;br&gt;(Container Management)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
-                    <mxGeometry x="200" y="800" width="160" height="50" as="geometry"/>
+                <mxCell id="434" value="Terraform&lt;br&gt;(Infrastructure as Code)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="420" y="813" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="36" value="GitHub Actions&lt;br&gt;(CI/CD Pipeline)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
-                    <mxGeometry x="504.5" y="800" width="160" height="50" as="geometry"/>
+                <mxCell id="435" value="Azure Application Insights&lt;br&gt;(Monitoring, Telemetry)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="813" width="160" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="37" value="Terraform&lt;br&gt;(Infrastructure as Code)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
-                    <mxGeometry x="800" y="800" width="160" height="50" as="geometry"/>
+                <mxCell id="438" value="Deployment Environments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;verticalAlign=top;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="60" y="873" width="520" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="38" value="Azure Key Vault&lt;br&gt;(Secrets Management)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
-                    <mxGeometry x="938" y="250" width="160" height="50" as="geometry"/>
+                <mxCell id="439" value="DEV" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="231" y="901" width="40" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="39" value="Azure Redis Cache&lt;br&gt;(Performance)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
-                    <mxGeometry x="938" y="660" width="160" height="50" as="geometry"/>
+                <mxCell id="440" value="TEST" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="301" y="901" width="40" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="40" value="Azure Application Insights&lt;br&gt;(Monitoring, Telemetry)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
-                    <mxGeometry x="60" y="800" width="130" height="50" as="geometry"/>
+                <mxCell id="442" value="PROD" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="367" y="901" width="40" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="41" value="Azure Synapse Analytics&lt;br&gt;(Big Data Processing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
-                    <mxGeometry x="60" y="660" width="130" height="50" as="geometry"/>
+                <mxCell id="443" value="Docker Compose&lt;br&gt;(Local Development)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="600" y="873" width="160" height="37" as="geometry"/>
                 </mxCell>
-                <mxCell id="43" value="Azure Event Grid&lt;br&gt;(Event Bus)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="960" y="400" width="140" height="30" as="geometry"/>
+                <mxCell id="447" value="Container Deployment" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="990" y="619" width="110" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="44" value="Development-only component" style="rounded=0;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#663300);strokeColor=#666666;dashed=1;dashPattern=1 2;" vertex="1" parent="1">
-                    <mxGeometry x="1150" y="210" width="310" height="100" as="geometry"/>
+                <mxCell id="451" value="Monitoring" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;rotation=90;" vertex="1" parent="1">
+                    <mxGeometry x="675" y="639" width="90" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="45" value="Mock Services Layer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" vertex="1" parent="1">
-                    <mxGeometry x="1200" y="220" width="210" height="20" as="geometry"/>
+                <mxCell id="456" value="Azure App Configuration&lt;br&gt;(Feature Flags)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;dashed=0;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="250" width="130" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="46" value="" style="fillColor=#36B37E;strokeColor=none;rounded=1;arcSize=50;sketch=0;hachureGap=4;pointerEvents=0;fontFamily=Architects Daughter;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DArchitects%2BDaughter;fontSize=20;" vertex="1" parent="1">
-                    <mxGeometry x="1160" y="220" width="40" height="16" as="geometry"/>
+                <mxCell id="459" value="DEVELOPMENT-ONLY MOCK SERVICES" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+                    <mxGeometry x="895" y="329" width="210" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="47" value="" style="shape=ellipse;strokeColor=none;fillColor=#ffffff;sketch=0;hachureGap=4;pointerEvents=0;fontFamily=Architects Daughter;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DArchitects%2BDaughter;fontSize=20;" vertex="1" parent="46">
-                    <mxGeometry x="1" y="0.5" width="12" height="12" relative="1" as="geometry">
-                        <mxPoint x="-14" y="-6" as="offset"/>
-                    </mxGeometry>
+                <mxCell id="460" value="OpenAPI-Generated Mocks" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#fff2cc;strokeColor:#d6b656;fontSize=12;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="295" y="358" width="160" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="48" value="" style="html=1;shadow=0;dashed=0;shape=mxgraph.atlassian.check;strokeColor=#ffffff;sketch=1;hachureGap=4;pointerEvents=0;fontFamily=Architects Daughter;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DArchitects%2BDaughter;fontSize=20;" vertex="1" parent="46">
-                    <mxGeometry y="0.5" width="6" height="5" relative="1" as="geometry">
-                        <mxPoint x="4" y="-3" as="offset"/>
-                    </mxGeometry>
+                <mxCell id="461" value="Mock Authentication" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#fff2cc;strokeColor:#d6b656;fontSize=12;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="504.5" y="358" width="160" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="57" value="Generated from OpenAPI" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-                    <mxGeometry x="1160" y="280" width="149" height="30" as="geometry"/>
+                <mxCell id="462" value="Mock API Server" style="rounded=1;whiteSpace=wrap;html=1;fillColor:#fff2cc;strokeColor:#d6b656;fontSize=12;dashed=1;" vertex="1" parent="1">
+                    <mxGeometry x="710" y="358" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="465" value="DEV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="40" y="326" width="30" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="473" value="Event Flow" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="1011" y="155" width="100" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="481" value="OpenAPI Specs" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="1">
+                    <mxGeometry x="836" y="294" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="483" value="" style="group" vertex="1" connectable="0" parent="1">
+                    <mxGeometry x="602.5" y="320" width="40" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="463" value="" style="shape=switch;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="483">
+                    <mxGeometry x="6" width="30" height="15" as="geometry"/>
+                </mxCell>
+                <mxCell id="464" value="Toggle" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=10;" vertex="1" parent="483">
+                    <mxGeometry x="-2" y="15" width="40" height="15" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
