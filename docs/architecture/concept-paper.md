@@ -110,3 +110,25 @@ While the diagram doesn't specify implementation details, the architecture sugge
 2. **Integration Framework:** Multiple external services require a robust integration approach
 3. **Scalability Considerations:** The modular design allows for independent scaling of components
 4. **Data Flow Management:** Complex workflows require careful data synchronization
+
+## 6. Architecture Implementation Traceability
+
+This concept paper has been implemented as concrete architecture components in the [High-Level Architecture](high-level-design.md) document:
+
+| Concept Component | Architecture Implementation | Architecture Section |
+|------------------|------------------------------|---------------------|
+| Authentication | Security Framework | §1 |
+| Authorization | Security Framework | §1 |
+| Registration | Candidate Domain | §2 |
+| Workflow | Recruitment Pipeline Domain | §8 |
+| Sourcing | Sourcing Domain | §3 |
+| Screening | Screening Domain | §4 |
+| Shortlisting | Screening Domain | §4 |
+| Publishing | Publishing Domain | §7 |
+| Scheduling | Scheduling Domain | §10 |
+| Notifications | Communications Domain | §11 |
+| Data | Analytics Domain | §12 |
+| Payments | Financial Domain | §13 |
+| Activity | Audit Domain | §15 |
+
+For a visual representation of how concept components map to architecture elements, see the [Concept-to-Architecture Mapping](diagrams/concept-to-architecture-mapping.md).
