@@ -1,6 +1,180 @@
 # Cognitive Hire Platform Cost Estimate
 
 This document provides a monthly cost estimate for the Cognitive Hire platform based on the following usage parameters:
+
+## Interactive Cost Calculator
+
+<div id="costCalculator" style="border: 1px solid #ddd; padding: 20px; border-radius: 5px; background-color: #f9f9f9; margin: 20px 0;">
+  <h3>Input Parameters</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;">
+    <div>
+      <label for="jobCount">Number of job postings per month:</label>
+      <input type="number" id="jobCount" value="25" min="1" style="width: 100px; margin-left: 10px;">
+    </div>
+    <div>
+      <label for="resumesPerJob">Resumes sourced per job:</label>
+      <input type="number" id="resumesPerJob" value="1000" min="1" style="width: 100px; margin-left: 10px;">
+    </div>
+    <div>
+      <label for="applicationsPerJob">Applications per job:</label>
+      <input type="number" id="applicationsPerJob" value="50" min="1" style="width: 100px; margin-left: 10px;">
+    </div>
+  </div>
+
+  <h3>Monthly Cost Breakdown</h3>
+  <table id="costTable" style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="background-color: #eee;">
+        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Category</th>
+        <th style="padding: 8px; text-align: right; border: 1px solid #ddd;">Cost Range</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Compute Resources</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="compute">$365-480</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">AI & Cognitive Services</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="ai">$1,440-1,500</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Data Storage</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="storage">$585-690</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Messaging & Integration</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="messaging">$19</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">DevOps & Monitoring</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="devops">$196</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Security & Networking</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="security">$111-121</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Communications</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="communications">$55</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Frontend Infrastructure</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="frontend">$67-99</span></td>
+      </tr>
+      <tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">Frontend Development Tools</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="tools">$0-248</span></td>
+      </tr>
+      <tr style="font-weight: bold; background-color: #eee;">
+        <td style="padding: 8px; border: 1px solid #ddd;">Monthly Total</td>
+        <td style="padding: 8px; text-align: right; border: 1px solid #ddd;"><span id="total">$2,840-3,408</span></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  <p style="margin-top: 20px;"><em>Note: This calculator provides estimates based on the input parameters. Actual costs may vary.</em></p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = ['jobCount', 'resumesPerJob', 'applicationsPerJob'];
+  inputs.forEach(id => {
+    document.getElementById(id).addEventListener('input', updateCosts);
+  });
+
+  function updateCosts() {
+    const jobCount = parseInt(document.getElementById('jobCount').value) || 0;
+    const resumesPerJob = parseInt(document.getElementById('resumesPerJob').value) || 0;
+    const applicationsPerJob = parseInt(document.getElementById('applicationsPerJob').value) || 0;
+    
+    const totalResumes = jobCount * resumesPerJob;
+    const totalApplications = jobCount * applicationsPerJob;
+    
+    // Compute resources: scales with overall workload
+    const computeBase = 365;
+    const computeMax = 480;
+    const computeFactor = Math.min(1, (jobCount / 25) * 0.8 + (totalResumes / 25000) * 0.1 + (totalApplications / 1250) * 0.1);
+    const compute = `$${Math.round(computeBase * computeFactor)}-${Math.round(computeMax * computeFactor)}`;
+    
+    // AI costs: scale directly with volume
+    const aiBaseMin = 1440;
+    const aiBaseMax = 1500;
+    const aiFactor = (jobCount / 25) * 0.1 + (totalResumes / 25000) * 0.8 + (totalApplications / 1250) * 0.1;
+    const ai = `$${Math.round(aiBaseMin * aiFactor)}-${Math.round(aiBaseMax * aiFactor)}`;
+    
+    // Storage costs: scales with total data volume (primarily resumes)
+    const storageBase = 585;
+    const storageMax = 690;
+    const storageFactor = Math.min(1, (jobCount / 25) * 0.1 + (totalResumes / 25000) * 0.9);
+    const storage = `$${Math.round(storageBase * storageFactor)}-${Math.round(storageMax * storageFactor)}`;
+    
+    // Some fixed costs with slight scaling
+    const messagingBase = 19;
+    const messagingFactor = Math.sqrt(jobCount / 25);
+    const messaging = `$${Math.round(messagingBase * messagingFactor)}`;
+    
+    // Fixed costs for now
+    const devops = "$196";
+    const security = "$111-121";
+    
+    // Communications: scales with applications
+    const commBase = 55;
+    const commFactor = Math.sqrt(totalApplications / 1250);
+    const communications = `$${Math.round(commBase * commFactor)}`;
+    
+    // Frontend costs
+    const frontendMin = 67;
+    const frontendMax = 99;
+    const frontendFactor = Math.min(1, Math.sqrt(jobCount / 25));
+    const frontend = `$${Math.round(frontendMin * frontendFactor)}-${Math.round(frontendMax * frontendFactor)}`;
+    
+    // Tools stay relatively constant
+    const tools = "$0-248";
+    
+    // Update the UI
+    document.getElementById('compute').textContent = compute;
+    document.getElementById('ai').textContent = ai;
+    document.getElementById('storage').textContent = storage;
+    document.getElementById('messaging').textContent = messaging;
+    document.getElementById('devops').textContent = devops;
+    document.getElementById('security').textContent = security;
+    document.getElementById('communications').textContent = communications;
+    document.getElementById('frontend').textContent = frontend;
+    document.getElementById('tools').textContent = tools;
+    
+    // Calculate total
+    const min = Math.round(
+      parseInt(compute.split('-')[0].replace('$', '')) + 
+      parseInt(ai.split('-')[0].replace('$', '')) + 
+      parseInt(storage.split('-')[0].replace('$', '')) + 
+      parseInt(messaging.replace('$', '')) +
+      parseInt(devops.replace('$', '')) +
+      parseInt(security.split('-')[0].replace('$', '')) +
+      parseInt(communications.replace('$', '')) +
+      parseInt(frontend.split('-')[0].replace('$', ''))
+    );
+    
+    const max = Math.round(
+      parseInt(compute.split('-')[1]) + 
+      parseInt(ai.split('-')[1].replace('$', '')) + 
+      parseInt(storage.split('-')[1].replace('$', '')) + 
+      parseInt(messaging.replace('$', '')) +
+      parseInt(devops.replace('$', '')) +
+      parseInt(security.split('-')[1].replace('$', '')) +
+      parseInt(communications.replace('$', '')) +
+      parseInt(frontend.split('-')[1].replace('$', '')) +
+      248 // Max tools cost
+    );
+    
+    document.getElementById('total').textContent = `$${min}-${max}`;
+  }
+});
+</script>
+
+## Static Cost Estimates
+
+This document provides a monthly cost estimate for the Cognitive Hire platform based on the following usage parameters:
 - 25 job postings per month
 - 1,000 resumes sourced per job (25,000 total)
 - 50 applications submitted per job (1,250 total)
