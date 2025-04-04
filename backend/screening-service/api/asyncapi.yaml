@@ -1,0 +1,41 @@
+asyncapi: 2.4.0
+info:
+  title: Screening Service WebSocket API
+  description: |
+    WebSocket API for the Screening Service.
+    
+    Provides real-time updates for resume parsing, skills matching, interest checks, 
+    assessments, and light screening processes.
+  version: 1.0.0
+
+servers:
+  production:
+    url: wss://api.cognitivehire.com/screening/ws
+    protocol: wss
+    description: Production WebSocket server
+  
+  development:
+    url: ws://localhost:8000/screening/ws
+    protocol: ws
+    description: Development WebSocket server
+
+channels:
+  /resume-parsing/{resume_id}:
+    parameters:
+      resume_id:
+        schema:
+          type: string
+          format: uuid
+    subscribe:
+      summary: Receive real-time updates on resume parsing progress
+      operationId: subscribeResumeParsingUpdates
+      message:
+        $ref: '#/components/messages/ResumeParsingUpdate'
+
+  # Additional channels from the existing AsyncAPI spec...
+  # ...abbreviated for brevity...
+
+components:
+  messages:
+    # Message definitions from the existing AsyncAPI spec...
+    # ...abbreviated for brevity...

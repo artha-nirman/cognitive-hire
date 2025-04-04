@@ -49,40 +49,40 @@
                 <mxCell id="arch-group" value="High-Level Architecture" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
                     <mxGeometry x="520" y="160" width="200" height="560" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-sec" value="Security Framework §4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-sec" value="Security Framework §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="200" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-cd" value="Candidate Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-cd" value="Candidate Domain §2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="240" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-sd" value="Sourcing Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-sd" value="Sourcing Domain §3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="280" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-scd" value="Screening Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-scd" value="Screening Domain §4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="320" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-pd" value="Publishing Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-pd" value="Publishing Domain §7" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="360" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-rd" value="Recruitment Pipeline Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-rd" value="Recruitment Pipeline Domain §8" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="400" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-id" value="Interview Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-id" value="Interview Domain §9" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="440" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-schd" value="Scheduling Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-schd" value="Scheduling Domain §10" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="480" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-coms" value="Communications Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-coms" value="Communications Domain §11" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="520" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-ad" value="Analytics Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-ad" value="Analytics Domain §12" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="560" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-fd" value="Financial Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-fd" value="Financial Domain §13" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="600" width="140" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="arch-aud" value="Audit Domain §1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                <mxCell id="arch-aud" value="Audit Domain §15" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="550" y="640" width="140" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="conn1" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="concept-auth" target="arch-sec" edge="1">
