@@ -1,0 +1,284 @@
+openapi: 3.0.0
+info:
+  title: Recruitment Service API
+  description: |
+    REST API for the Recruitment Service.
+    
+    The Recruitment Service handles employer organization management, job definitions,
+    publishing, candidate screening, and sourcing capabilities.
+  version: 1.0.0
+  
+servers:
+  - url: https://api.cognitivehire.com/recruitment/v1
+    description: Production server
+  - url: https://api-test.cognitivehire.com/recruitment/v1
+    description: Test server
+  - url: http://localhost:8000/api
+    description: Local development
+
+tags:
+  - name: employer
+    description: Employer organization management
+  - name: job
+    description: Job definition and management
+  - name: publishing
+    description: Multi-channel job distribution
+  - name: screening
+    description: Candidate evaluation
+  - name: sourcing
+    description: Candidate acquisition
+
+paths:
+  # Employer endpoints
+  /employer:
+    get:
+      summary: List employers
+      tags:
+        - employer
+      parameters:
+        - name: skip
+          in: query
+          description: Number of employers to skip
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          description: Maximum number of employers to return
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: List of employers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmployerRead'
+    post:
+      summary: Create a new employer
+      tags:
+        - employer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployerCreate'
+      responses:
+        '201':
+          description: Employer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployerRead'
+  
+  # Job endpoints
+  /jobs:
+    get:
+      summary: List jobs
+      tags:
+        - job
+      parameters:
+        - name: employer_id
+          in: query
+          description: Filter by employer ID
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Filter by job status
+          schema:
+            type: string
+            enum: [DRAFT, PUBLISHED, CLOSED, FILLED]
+        - name: skip
+          in: query
+          description: Number of jobs to skip
+          schema:
+            type: integer
+            default: 0
+        - name: limit
+          in: query
+          description: Maximum number of jobs to return
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/JobRead'
+                  
+    post:
+      summary: Create a new job
+      tags:
+        - job
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreate'
+      responses:
+        '201':
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobRead'
+
+  # Abbreviated for example purposes...
+  # Additional paths would continue for other endpoints...
+
+components:
+  schemas:
+    # Employer schemas
+    EmployerBase:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        website:
+          type: string
+        industry:
+          type: string
+        size:
+          type: string
+          enum: [Small, Medium, Large, Enterprise]
+      required:
+        - name
+    
+    EmployerCreate:
+      allOf:
+        - $ref: '#/components/schemas/EmployerBase'
+        - type: object
+          properties:
+            tenant_id:
+              type: string
+              format: uuid
+          required:
+            - tenant_id
+
+    EmployerRead:
+      allOf:
+        - $ref: '#/components/schemas/EmployerBase'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            tenant_id:
+              type: string
+              format: uuid
+            is_active:
+              type: boolean
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    
+    # Job schemas
+    JobBase:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        job_type:
+          type: string
+          enum: [FULL_TIME, PART_TIME, CONTRACT, TEMPORARY, INTERNSHIP]
+        location:
+          type: string
+        is_remote:
+          type: boolean
+        salary_min:
+          type: integer
+        salary_max:
+          type: integer
+        salary_currency:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        preferred_skills:
+          type: array
+          items:
+            type: string
+        experience_level:
+          type: string
+        education_level:
+          type: string
+        responsibilities:
+          type: string
+        benefits:
+          type: string
+        application_url:
+          type: string
+        application_email:
+          type: string
+        application_instructions:
+          type: string
+        is_featured:
+          type: boolean
+          default: false
+        expires_at:
+          type: string
+          format: date-time
+      required:
+        - title
+        - job_type
+    
+    JobCreate:
+      allOf:
+        - $ref: '#/components/schemas/JobBase'
+        - type: object
+          properties:
+            tenant_id:
+              type: string
+              format: uuid
+            employer_id:
+              type: string
+              format: uuid
+          required:
+            - tenant_id
+            - employer_id
+    
+    JobRead:
+      allOf:
+        - $ref: '#/components/schemas/JobBase'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            tenant_id:
+              type: string
+              format: uuid
+            employer_id:
+              type: string
+              format: uuid
+            status:
+              type: string
+              enum: [DRAFT, PUBLISHED, CLOSED, FILLED]
+            published_at:
+              type: string
+              format: date-time
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    
+    # Additional schemas would continue here...

@@ -1,0 +1,143 @@
+asyncapi: 2.4.0
+info:
+  title: Recruitment Service WebSocket API
+  description: |
+    WebSocket API for the Recruitment Service.
+    
+    Provides real-time updates for job posting, candidate screening, 
+    and sourcing processes.
+  version: 1.0.0
+
+servers:
+  production:
+    url: wss://api.cognitivehire.com/recruitment/ws
+    protocol: wss
+    description: Production WebSocket server
+  
+  development:
+    url: ws://localhost:8000/ws
+    protocol: ws
+    description: Development WebSocket server
+
+channels:
+  /job-updates/{job_id}:
+    parameters:
+      job_id:
+        schema:
+          type: string
+          format: uuid
+    subscribe:
+      summary: Receive real-time updates on job status and publishing
+      operationId: subscribeJobUpdates
+      message:
+        $ref: '#/components/messages/JobUpdate'
+
+  /screening/{job_id}:
+    parameters:
+      job_id:
+        schema:
+          type: string
+          format: uuid
+    subscribe:
+      summary: Receive real-time updates on screening progress
+      operationId: subscribeScreeningUpdates
+      message:
+        $ref: '#/components/messages/ScreeningUpdate'
+
+  /sourcing/{job_id}:
+    parameters:
+      job_id:
+        schema:
+          type: string
+          format: uuid
+    subscribe:
+      summary: Receive real-time updates on candidate sourcing processes
+      operationId: subscribeSourceUpdates
+      message:
+        $ref: '#/components/messages/SourcingUpdate'
+
+components:
+  messages:
+    JobUpdate:
+      payload:
+        type: object
+        properties:
+          event_type:
+            type: string
+            enum: [job_created, job_updated, job_published, job_unpublished, job_deleted]
+          job_id:
+            type: string
+            format: uuid
+          timestamp:
+            type: string
+            format: date-time
+          data:
+            type: object
+            properties:
+              title:
+                type: string
+              status:
+                type: string
+              publisher:
+                type: string
+              channel:
+                type: string
+              error:
+                type: string
+
+    ScreeningUpdate:
+      payload:
+        type: object
+        properties:
+          event_type:
+            type: string
+            enum: [screening_started, resume_parsed, skills_matched, interest_check_sent, assessment_completed, screening_completed]
+          job_id:
+            type: string
+            format: uuid
+          candidate_id:
+            type: string
+            format: uuid
+          timestamp:
+            type: string
+            format: date-time
+          data:
+            type: object
+            properties:
+              match_score:
+                type: number
+              status:
+                type: string
+              count_processed:
+                type: integer
+              total_count:
+                type: integer
+
+    SourcingUpdate:
+      payload:
+        type: object
+        properties:
+          event_type:
+            type: string
+            enum: [sourcing_started, candidates_found, sourcing_completed, sourcing_error]
+          job_id:
+            type: string
+            format: uuid
+          timestamp:
+            type: string
+            format: date-time
+          data:
+            type: object
+            properties:
+              source:
+                type: string
+              candidates_found:
+                type: integer
+              candidates_processed:
+                type: integer
+              total_sources:
+                type: integer
+              completed_sources:
+                type: integer
+              error_message:
+                type: string
