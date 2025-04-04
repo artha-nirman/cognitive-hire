@@ -123,7 +123,8 @@ This concept paper has been implemented as concrete architecture components in t
 | Workflow | Recruitment Pipeline Domain | §8 |
 | Sourcing | Sourcing Domain | §3 |
 | Screening | Screening Domain | §4 |
-| Shortlisting | Screening Domain | §4 |
+| Shortlisting: Interest Check | Screening Domain (Interest Check workflows) | §4 |
+| Shortlisting: Assessment | Screening Domain (Assessment delivery) | §4 |
 | Publishing | Publishing Domain | §7 |
 | Scheduling | Scheduling Domain | §10 |
 | Notifications | Communications Domain | §11 |

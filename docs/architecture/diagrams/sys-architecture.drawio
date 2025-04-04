@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="U1vcYQol0Dq-Bb2WOaCl" name="Cognitive Hire Architecture">
-        <mxGraphModel dx="845" dy="817" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0" adaptiveColors="none">
+        <mxGraphModel dx="489" dy="594" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" background="none" math="0" shadow="0" adaptiveColors="none">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -193,8 +193,8 @@
                 <mxCell id="502" value="&lt;b&gt;Sourcing Service&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;- Job Board Integration&lt;br&gt;- Social Media Channels&lt;br&gt;- Referral Programs&lt;br&gt;- Talent Pools&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" parent="1" vertex="1">
                     <mxGeometry x="960" y="477" width="140" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="503" value="&lt;b&gt;Screening Service&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;- Resume Parsing&lt;br&gt;- Skills Matching&lt;br&gt;- Automated Assessments&lt;br&gt;- Qualification Verification&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" parent="1" vertex="1">
-                    <mxGeometry x="960" y="558" width="140" height="98" as="geometry"/>
+                <mxCell id="503" value="&lt;b&gt;Screening Service&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;- Resume Parsing&lt;br&gt;- Skills Matching&lt;br&gt;- Interest Check Workflows&lt;br&gt;- Automated Assessments&lt;br&gt;- Candidate Response Tracking&lt;br&gt;- Qualification Verification&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="960" y="558" width="140" height="132" as="geometry"/>
                 </mxCell>
                 <mxCell id="504" value="&lt;b&gt;Publishing Service&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 10px;&quot;&gt;- Multi-channel Distribution&lt;br&gt;- Job Board Posting&lt;br&gt;- SEO Optimization&lt;br&gt;- Publishing Analytics&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" parent="1" vertex="1">
                     <mxGeometry x="760" y="637" width="140" height="89" as="geometry"/>
@@ -211,7 +211,7 @@
                 <mxCell id="506" value="All services implement both REST APIs and WebSockets following DDR-002" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="1" vertex="1">
                     <mxGeometry x="50" y="716" width="410" height="20" as="geometry"/>
                 </mxCell>
-                <mxCell id="507" value="Azure Static Web Apps&lt;br&gt;(Next.js Deployment)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+                <mxCell id="507" value="Azure Static Web Apps&lt;br&gt;(Next.js Deployment)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" parent="1" vertex="1">
                     <mxGeometry x="780" y="997" width="160" height="37" as="geometry"/>
                 </mxCell>
             </root>
