@@ -1,9 +1,9 @@
 # Cross-Domain Workflow Management
 
 ## Traceability Links
-- **Concept Elements**: [Workflow](../../concept-paper.md#35-recruitment-workflow-components), [Screening](../../concept-paper.md#35-recruitment-workflow-components), [Shortlisting](../../concept-paper.md#35-recruitment-workflow-components)
-- **HLD Components**: [Recruitment Pipeline Domain (§8)](../../high-level-design.md#8-recruitment-pipeline-domain), [Event-Driven Architecture (§16)](../../high-level-design.md#16-technical-implementation)
-- **Related DDRs**: [DDR-001](../../high-level-design.md#ddr-001-domain-based-microservice-architecture)
+- **Concept Elements**: [Workflow](./concept-paper.md#35-recruitment-workflow-components), [Screening](./concept-paper.md#35-recruitment-workflow-components), [Shortlisting](./concept-paper.md#35-recruitment-workflow-components)
+- **HLD Components**: [Recruitment Pipeline Domain (§8)](./high-level-design.md#8-recruitment-pipeline-domain), [Event-Driven Architecture (§16)](./high-level-design.md#16-technical-implementation)
+- **Related DDRs**: [DDR-001](./high-level-design.md#ddr-001-domain-based-microservice-architecture)
 
 ## Justification for Separate Document
 This document addresses a cross-cutting architectural concern that spans multiple domains and directly implements the "Pipeline tracking" capability described in the concept paper's Workflow section. It serves as a reference document for all service implementations to ensure consistent implementation of cross-domain workflows.
