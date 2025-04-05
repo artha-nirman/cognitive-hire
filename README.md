@@ -65,6 +65,7 @@ See our [architecture documentation](./architecture/) for detailed design inform
 - Docker and Docker Compose
 - Node.js 18+ and npm/yarn
 - Python 3.11+
+- Azure CLI (for environment setup)
 - Azure account (for full deployment)
 
 ### Local Development Setup
@@ -75,19 +76,28 @@ See our [architecture documentation](./architecture/) for detailed design inform
    cd cognitive-hire
    ```
 
-2. Start the services using Docker Compose
+2. Set up environment variables
+   ```bash
+   # Fetch development secrets from Azure Key Vault
+   python scripts/setup-env.py --service recruitment
+   # For other services
+   python scripts/setup-env.py --service candidate
+   ```
+   See the [Environment Setup Guide](./docs/environment-setup.md) for more details.
+
+3. Start the services using Docker Compose
    ```bash
    docker-compose up -d
    ```
 
-3. Set up the frontend application
+4. Set up the frontend application
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
 
-4. Visit http://localhost:3000 to access the application
+5. Visit http://localhost:3000 to access the application
 
 For detailed setup instructions, see our [Development Guide](./docs/development-guide.md).
 

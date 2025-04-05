@@ -5,6 +5,7 @@ import aio_pika
 import structlog
 import uuid
 import redis.asyncio as redis
+import asyncio
 
 from src.common.config import settings
 
@@ -13,6 +14,8 @@ logger = structlog.get_logger(__name__)
 # Global connection objects
 connection = None
 channel = None
+redis_client = None
+redis_available = False  # Track Redis availability
 
 # Event handler type
 EventHandler = Callable[[Dict[str, Any]], Awaitable[None]]
@@ -34,7 +37,7 @@ async def init_event_system() -> None:
     global connection, channel
     
     if not settings.EVENT_BUS_URL:
-        logger.warning("No event bus URL configured, using Redis as fallback")
+        logger.warning("No event bus URL configured, trying Redis as fallback")
         await init_redis_events()
         return
         
@@ -203,25 +206,37 @@ async def process_event(message: aio_pika.IncomingMessage) -> None:
 
 
 # Redis fallback for local development or when RabbitMQ is not available
-redis_client = None
-
 async def init_redis_events() -> None:
     """
     Initialize Redis for event publishing (fallback).
     
     Used when the primary event system (RabbitMQ) is not available.
     """
-    global redis_client
+    global redis_client, redis_available
     try:
         logger.info("Initializing Redis event system", url=settings.REDIS_URL)
-        redis_client = redis.from_url(settings.REDIS_URL)
-        # Start a background task to subscribe to events
-        import asyncio
-        asyncio.create_task(redis_subscription_listener())
-        logger.info("Redis event system initialized")
+        
+        # Check if Redis is reachable with a short timeout
+        temp_redis = redis.from_url(settings.REDIS_URL, socket_connect_timeout=2.0)
+        try:
+            await temp_redis.ping()
+            redis_available = True
+        except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError) as e:
+            logger.warning("Redis not available, events will be logged only", error=str(e))
+            redis_available = False
+            return
+        finally:
+            await temp_redis.close()
+            
+        if redis_available:
+            redis_client = redis.from_url(settings.REDIS_URL)
+            # Start a background task to subscribe to events
+            asyncio.create_task(redis_subscription_listener())
+            logger.info("Redis event system initialized successfully")
     except Exception as e:
-        logger.error("Failed to initialize Redis event system", exc_info=e)
+        logger.warning("Failed to initialize Redis event system, events will be logged only", exc_info=e)
         redis_client = None
+        redis_available = False
 
 
 async def redis_subscription_listener() -> None:
@@ -230,8 +245,10 @@ async def redis_subscription_listener() -> None:
     
     Subscribes to all relevant event channels and processes messages.
     """
-    if not redis_client:
-        logger.error("Redis client not initialized, cannot start listener")
+    global redis_available
+    
+    if not redis_client or not redis_available:
+        logger.warning("Redis client not initialized, cannot start listener")
         return
         
     try:
@@ -267,16 +284,32 @@ async def redis_subscription_listener() -> None:
                             )
                 except Exception as e:
                     logger.error("Failed to process Redis event", exc_info=e)
+    except (redis.exceptions.ConnectionError, asyncio.CancelledError) as e:
+        logger.warning("Redis subscription disconnected", error=str(e))
+        redis_available = False
     except Exception as e:
         logger.error("Redis subscription error", exc_info=e)
+        redis_available = False
     finally:
         # Try to clean up
         try:
-            logger.info("Cleaning up Redis subscription")
-            await pubsub.unsubscribe()
-            await sub_client.close()
+            if 'pubsub' in locals() and pubsub:
+                try:
+                    await pubsub.unsubscribe()
+                except (redis.exceptions.ConnectionError, asyncio.CancelledError):
+                    # Ignore connection errors during cleanup
+                    pass
+                    
+            if 'sub_client' in locals() and sub_client:
+                try:
+                    await sub_client.close()
+                except (redis.exceptions.ConnectionError, asyncio.CancelledError):
+                    # Ignore connection errors during cleanup
+                    pass
+                    
+            logger.info("Redis subscription cleanup completed")
         except Exception as e:
-            logger.error("Error during Redis cleanup", exc_info=e)
+            logger.warning("Error during Redis cleanup", error=str(e))
 
 
 async def publish_redis_event(event_type: str, data: Dict[str, Any]) -> None:
@@ -286,14 +319,13 @@ async def publish_redis_event(event_type: str, data: Dict[str, Any]) -> None:
     Args:
         event_type: Type of the event
         data: Event payload data
-        
-    Raises:
-        Warning: If Redis client is not initialized
     """
-    if not redis_client:
-        logger.warning(
-            "Redis client not initialized, event will be lost",
-            event_type=event_type
+    if not redis_client or not redis_available:
+        # Just log the event if Redis is not available
+        logger.info(
+            "Event published (Redis not available)",
+            event_type=event_type,
+            data=data
         )
         return
         
@@ -310,8 +342,8 @@ async def publish_redis_event(event_type: str, data: Dict[str, Any]) -> None:
         await redis_client.publish(f"event:{event_type}", json.dumps(message))
         logger.debug("Published event to Redis", event_type=event_type)
     except Exception as e:
-        logger.error(
-            "Failed to publish event to Redis", 
-            event_type=event_type, 
-            exc_info=e
+        logger.warning(
+            "Failed to publish event to Redis, event logged instead", 
+            event_type=event_type,
+            error=str(e)
         )

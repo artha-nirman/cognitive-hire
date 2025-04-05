@@ -2,14 +2,20 @@ import logging
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
+from fastapi.openapi.utils import get_openapi
+from fastapi.security import OAuth2AuthorizationCodeBearer
+from pathlib import Path
+import os
 
 from src.common.config import settings
 from src.common.db.database import init_db
-from src.common.events import init_event_system, close_event_system
+from src.common.events import init_event_system, close_event_system, register_event_handler
 from src.domains.employer.router import router as employer_router
 from src.domains.job.router import router as job_router
 from src.domains.publishing.router import router as publishing_router
@@ -18,6 +24,8 @@ from src.domains.sourcing.router import router as sourcing_router
 from src.common.middleware.logging import RequestLoggingMiddleware
 from src.common.middleware.auth import AuthMiddleware
 from src.common.middleware.tenant import TenantMiddleware
+from src.common.websocket.handlers import handle_job_event, handle_screening_event, handle_sourcing_event
+from src.websocket.routes import router as websocket_router
 
 # Configure structured logging
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
@@ -54,7 +62,6 @@ logger = structlog.get_logger(__name__)
 async def lifespan(app: FastAPI):
     """
     Initialize and cleanup application resources.
-    
     This context manager runs at application startup and shutdown.
     It handles initializing and closing database connections and the event system.
     """
@@ -74,6 +81,20 @@ async def lifespan(app: FastAPI):
     # Initialize event system
     try:
         await init_event_system()
+        
+        # Register WebSocket event handlers
+        await register_event_handler("job.created", handle_job_event)
+        await register_event_handler("job.updated", handle_job_event)
+        await register_event_handler("job.published", handle_job_event)
+        await register_event_handler("job.unpublished", handle_job_event)
+        
+        await register_event_handler("screening.resume.uploaded", handle_screening_event)
+        await register_event_handler("screening.matching.started", handle_screening_event)
+        await register_event_handler("screening.interest_check.sent", handle_screening_event)
+        
+        await register_event_handler("sourcing.process.started", handle_sourcing_event)
+        await register_event_handler("sourcing.channel.registered", handle_sourcing_event)
+        
     except Exception as e:
         logger.error("Event system initialization failed", exc_info=e)
         raise
@@ -93,18 +114,27 @@ async def lifespan(app: FastAPI):
     
     logger.info("Application shutdown complete")
 
+# Define OAuth2 scheme for Swagger UI
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
+    tokenUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
+    scopes={f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"}
+)
+
 # Create FastAPI application
 app = FastAPI(
-    title="Recruitment Service",
-    description="Service implementing Employer, Job, Publishing, Screening, and Sourcing domains",
+    title="Recruitment Service API",
+    description="API for managing job postings, employers, and candidate interactions",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None,  # We'll create a custom docs endpoint
+    redoc_url=None,  # We'll create a custom redoc endpoint
 )
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -121,6 +151,75 @@ app.include_router(job_router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(publishing_router, prefix="/api/publishing", tags=["Publishing"])
 app.include_router(screening_router, prefix="/api/screening", tags=["Screening"])
 app.include_router(sourcing_router, prefix="/api/sourcing", tags=["Sourcing"])
+app.include_router(websocket_router, prefix="/ws")
+
+# Determine the path to static files
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    # Mount the static files
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    logger.info(f"Mounted static files from {static_dir}")
+
+# Custom OpenAPI to include security definitions
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    # Add security scheme
+    openapi_schema["components"] = openapi_schema.get("components", {})
+    openapi_schema["components"]["securitySchemes"] = {
+        "oauth2": {
+            "type": "oauth2",
+            "flows": {
+                "authorizationCode": {
+                    "authorizationUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
+                    "tokenUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
+                    "scopes": {
+                        f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"
+                    }
+                }
+            }
+        }
+    }
+    
+    # Apply security to all operations
+    openapi_schema["security"] = [{"oauth2": [f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+
+# Custom Swagger UI with Azure AD B2C configuration
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - Swagger UI",
+        oauth2_redirect_url="/static/oauth2-redirect.html",
+        init_oauth={
+            "clientId": settings.SWAGGER_UI_CLIENT_ID,
+            "appName": "Cognitive Hire API Swagger UI",
+            "scopeSeparator": " ",
+            "additionalQueryStringParams": {
+                "prompt": "login"  # Force login every time
+            }
+        }
+    )
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - ReDoc",
+    )
 
 # Exception handlers
 @app.exception_handler(HTTPException)
@@ -149,7 +248,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors()},
     )
 
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
 async def health_check():
     """
     Health check endpoint.

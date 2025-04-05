@@ -2,6 +2,7 @@ import structlog
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
+from src.common.config import settings  # Added missing import
 
 logger = structlog.get_logger(__name__)
 
