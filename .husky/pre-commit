@@ -1,0 +1,29 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Check if any API specs are being committed
+CHANGED_API_SPECS=$(git diff --cached --name-only | grep -E '(openapi|asyncapi)\.ya?ml$')
+
+if [ -n "$CHANGED_API_SPECS" ]; then
+  echo "API specification changes detected"
+  
+  # Validate OpenAPI specs
+  for spec in $(echo "$CHANGED_API_SPECS" | grep -E 'openapi\.ya?ml$'); do
+    if [ -f "$spec" ]; then
+      echo "Validating $spec"
+      npx swagger-cli validate "$spec" || exit 1
+    fi
+  done
+  
+  # Validate AsyncAPI specs
+  for spec in $(echo "$CHANGED_API_SPECS" | grep -E 'asyncapi\.ya?ml$'); do
+    if [ -f "$spec" ]; then
+      echo "Validating $spec"
+      npx @asyncapi/validator "$spec" || exit 1
+    fi
+  done
+  
+  # Remind developer about documentation
+  echo "⚠️  You've modified API specifications. Please ensure documentation is updated."
+  echo "✅  Run 'npm run docs:api' locally to preview changes."
+fi

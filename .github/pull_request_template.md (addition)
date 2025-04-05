@@ -1,0 +1,7 @@
+## API Changes
+<!-- If this PR includes API changes, please check the following -->
+- [ ] OpenAPI/AsyncAPI specifications updated
+- [ ] API versioning standards followed
+- [ ] Breaking changes identified in PR description
+- [ ] API documentation updated
+- [ ] SDK updates required? (If yes, link to SDK PR)
