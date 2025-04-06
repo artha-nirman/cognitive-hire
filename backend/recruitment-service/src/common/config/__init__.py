@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     AUTH_ALGORITHM: str = "HS256"
     AUTH_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Auth bypass config for development/testing
+    AUTH_BYPASS_ENABLED: bool = True
+    AUTH_BYPASS_TOKEN: Optional[str] = "cog-hire-dev-bypass-token-apr-2025"
+    
     # Azure AD B2C Settings
     AZURE_AD_B2C_TENANT_NAME: str
     AZURE_AD_B2C_CLIENT_ID: str

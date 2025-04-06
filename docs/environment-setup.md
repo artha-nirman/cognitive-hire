@@ -116,3 +116,6 @@ If you need to update or add new secrets:
 - Don't log environment variables containing secrets
 - Rotate secrets regularly according to the security policy
 - Use different secrets for development, testing, and production
+
+<!-- In environment-setup.md -->
+> **Next steps**: After setting up your environment, see the [Development Guide](development-guide.md) for coding standards and workflows.

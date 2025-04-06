@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 import structlog
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -47,19 +47,27 @@ async def init_azure_auth(app: FastAPI) -> None:
         logger.error("Failed to initialize Azure AD B2C authentication", exc_info=e)
         raise
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
+async def get_current_user(request: Request) -> Optional[Dict[str, Any]]:
     """
-    Get current authenticated user using Microsoft's MSAL library.
+    Get the current authenticated user from the request.
+    
+    This dependency is used in route handlers to require authentication
+    and access user information.
     
     Args:
-        token: The OAuth2 token
+        request: The HTTP request
         
     Returns:
-        Dict with user information
+        Dict containing user information
         
     Raises:
-        HTTPException: If token validation fails
+        HTTPException: If authentication fails
     """
+    # Check if we already have a user set by middleware bypass
+    if hasattr(request.state, "user") and request.state.user:
+        logger.debug("Using user from request state (bypass)", user_id=request.state.user_id)
+        return request.state.user
+        
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

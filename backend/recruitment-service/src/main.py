@@ -144,6 +144,21 @@ app = FastAPI(
     redoc_url=None,  # We'll create a custom redoc endpoint
 )
 
+# Add development mode auth bypass info to description if in development
+if settings.ENVIRONMENT in ["development", "testing"]:
+    app.description += """
+
+## Development Authentication Bypass
+
+In development environments, you can bypass authentication by clicking the "Authorize" button and entering a token in the "authBypass" section, or by adding these headers to your requests:
+```
+X-Auth-Bypass: {token}
+X-Test-Tenant-ID: test-tenant-id  # Optional
+```
+
+This feature is disabled in production.
+"""
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -173,12 +188,10 @@ if static_dir.exists():
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     logger.info(f"Mounted static files from {static_dir}")
     
-    # Also mount the oauth2-redirect.html directly at /docs/oauth2-redirect.html to match the expected path
+    # Don't mount the /docs path directly with StaticFiles
+    # Instead, use our explicit routes below
     oauth2_redirect_path = static_dir / "oauth2-redirect.html"
-    if oauth2_redirect_path.exists():
-        app.mount("/docs", StaticFiles(directory=static_dir, html=True), name="docs_static")
-        logger.info("Mounted OAuth2 redirect file at /docs path")
-    else:
+    if not oauth2_redirect_path.exists():
         logger.warning("OAuth2 redirect file not found at expected location", path=str(oauth2_redirect_path))
 
 # Custom OpenAPI to include security definitions
@@ -211,8 +224,23 @@ def custom_openapi():
         }
     }
     
-    # Apply security to all operations
-    openapi_schema["security"] = [{"oauth2": ["openid", f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]}]
+    # Add development auth bypass info if in development mode
+    if settings.ENVIRONMENT in ["development", "testing"]:
+        openapi_schema["components"]["securitySchemes"]["authBypass"] = {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Auth-Bypass",
+            "description": f"Development authentication bypass token. Use value: '{settings.AUTH_BYPASS_TOKEN}'"
+        }
+        
+        # Allow either oauth2 OR authBypass (not both required)
+        openapi_schema["security"] = [
+            {"oauth2": ["openid", f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]},
+            {"authBypass": []}  # Using OR relationship between security schemes
+        ]
+    else:
+        # In non-development environments, only use OAuth2
+        openapi_schema["security"] = [{"oauth2": ["openid", f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]}]
     
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -230,15 +258,15 @@ async def custom_swagger_ui_html():
             "clientId": settings.SWAGGER_UI_CLIENT_ID,
             "appName": "Cognitive Hire API Swagger UI",
             "scopeSeparator": " ",
-            "usePkceWithAuthorizationCodeGrant": True,  # Enable PKCE
-            "useBasicAuthenticationWithAccessCodeGrant": False,  # Azure B2C doesn't support this flow
+            "usePkceWithAuthorizationCodeGrant": True,
+            "useBasicAuthenticationWithAccessCodeGrant": False,
             "additionalQueryStringParams": {
-                "prompt": "login",  # Force login every time
-                "response_type": "token id_token",  # Request both token types
-                "response_mode": "fragment"  # Ensures token is returned in URL fragment
+                "prompt": "login",
+                "response_type": "token id_token",
+                "response_mode": "fragment"
             }
         },
-        swagger_js_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",  # Use latest version
+        swagger_js_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",
         swagger_css_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css"
     )
 
@@ -266,16 +294,13 @@ async def oauth2_redirect():
     try:
         with open(oauth2_redirect_path, "r") as f:
             content = f.read()
-            
         logger.debug("Serving OAuth2 redirect file", file_size=len(content))
-        
         # Add headers to prevent caching
         headers = {
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
             "Expires": "0"
         }
-        
         return Response(content=content, media_type="text/html", headers=headers)
     except Exception as e:
         logger.error("Failed to serve OAuth2 redirect file", error=str(e), exc_info=e)
@@ -291,11 +316,10 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     """Handle HTTP exceptions and log them appropriately."""
     logger.info("HTTP exception", 
                 status_code=exc.status_code, 
-                detail=exc.detail,
+                detail=exc.detail, 
                 path=request.url.path)
-    
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=exc.status_code, 
         content={"detail": exc.detail},
     )
 
@@ -306,7 +330,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
                   errors=exc.errors(),
                   body=str(await request.body()),
                   path=request.url.path)
-                  
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors()},
@@ -316,7 +339,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 async def health_check():
     """
     Health check endpoint.
-    
     Returns a simple status response to indicate the service is running.
     Used by container orchestration and monitoring systems.
     """

@@ -2,6 +2,10 @@
 
 This guide provides instructions for setting up your development environment and contributing to the Cognitive Hire platform.
 
+<!-- In development-guide.md -->
+> **Prerequisites**: Make sure you've completed the [Environment Setup](environment-setup.md) before starting development.
+
+
 ## Environment Setup
 
 1. **Prerequisites Installation**

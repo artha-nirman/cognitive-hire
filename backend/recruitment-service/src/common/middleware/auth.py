@@ -202,12 +202,29 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # Define paths that don't need authentication
         self.public_paths = [
             "/docs", 
+            "/docs/",
+            "/docs/oauth2-redirect.html",
+            "/docs/swagger-ui",
             "/redoc", 
             "/openapi.json", 
             "/health", 
             "/metrics",
             "/.well-known/",  # For discovery endpoints
+            "/static/",  # Static files
+            "/debug/",   # Debug endpoints
         ]
+        
+        # Authentication bypass setting
+        self.bypass_enabled = settings.AUTH_BYPASS_ENABLED
+        self.bypass_header = "X-Auth-Bypass"
+        self.bypass_token = settings.AUTH_BYPASS_TOKEN
+        
+        if self.bypass_enabled:
+            logger.warning(
+                "Authentication bypass is ENABLED by configuration",
+                bypass_header=self.bypass_header
+            )
+        
         logger.info("Auth middleware initialized", public_paths=self.public_paths)
         
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -221,12 +238,91 @@ class AuthMiddleware(BaseHTTPMiddleware):
         Returns:
             The response from downstream handlers or an error response
         """
+        # Log the current path for debugging
+        logger.debug("Processing request", path=request.url.path)
+        
         # Skip auth for public paths
         for path in self.public_paths:
             if request.url.path.startswith(path):
-                logger.debug("Skipping auth for public path", path=request.url.path)
+                logger.debug("Skipping auth for public path", path=request.url.path, matched_pattern=path)
                 return await call_next(request)
         
-        # In this simplified version, we'll delegate actual auth to the FastAPI dependencies
-        # This middleware just handles the non-authenticated paths
-        return await call_next(request)
+        logger.debug("Path requires authentication", path=request.url.path)
+
+        # Check if auth bypass is enabled and if a valid bypass token is present
+        bypass_active = False
+        
+        if self.bypass_enabled and settings.ENVIRONMENT in ["development", "testing"]:
+            # Get bypass token from header
+            bypass_header_value = request.headers.get(self.bypass_header)
+            
+            # Only bypass if the header contains the correct token
+            if bypass_header_value and bypass_header_value == self.bypass_token:
+                logger.warning(
+                    "Authentication bypassed with valid token",
+                    path=request.url.path
+                )
+                bypass_active = True
+            elif bypass_header_value:
+                logger.warning(
+                    "Authentication bypass attempt with invalid token",
+                    path=request.url.path
+                )
+        
+        if bypass_active:
+            # Add a mock user to request state
+            request.state.user = {
+                "sub": "test-user-id",
+                "name": "Test User",
+                "roles": ["admin"],
+                "tenant_id": request.headers.get("X-Test-Tenant-ID", "default-tenant")
+            }
+            request.state.user_id = "test-user-id"
+            request.state.tenant_id = request.headers.get("X-Test-Tenant-ID", "default-tenant")
+            request.state.roles = ["admin"]
+            
+            return await call_next(request)
+        
+        # Get token from header for regular authentication
+        auth_header = request.headers.get("Authorization")
+        logger.debug("Authorization header", header_value=auth_header[:15] + "..." if auth_header else "None")
+        
+        if not auth_header or not auth_header.startswith("Bearer "):
+            # No token provided, unauthenticated
+            logger.warning(
+                "Missing or invalid Authorization header", 
+                path=request.url.path,
+                client=request.client.host if request.client else None
+            )
+            return Response(
+                content='{"detail":"Not authenticated"}',
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                media_type="application/json"
+            )
+        
+        # Extract token
+        token = auth_header.replace("Bearer ", "")
+        
+        try:
+            # Validate token
+            payload = await azure_ad_b2c_auth.validate_token(token)
+            
+            # Add user info to request state
+            request.state.user = payload
+            request.state.user_id = payload.get("sub")
+            request.state.roles = payload.get("roles", [])
+            
+            # Continue with request
+            return await call_next(request)
+            
+        except HTTPException as e:
+            # Re-raise HTTP exceptions from the token validation
+            raise
+        except Exception as e:
+            # Log unexpected errors
+            logger.error("Authentication error", exc_info=e)
+            return Response(
+                content='{"detail":"Authentication error"}',
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                media_type="application/json"
+            )
