@@ -2,78 +2,102 @@
 <html lang="en-US">
 <head>
     <title>Swagger UI: OAuth2 Redirect</title>
+    <meta charset="UTF-8">
 </head>
 <body>
 <script>
     'use strict';
-    // Parse the URL fragment
-    function run () {
-        var oauth2 = window.opener.swaggerUIRedirectOauth2;
-        var sentState = oauth2.state;
-        var redirectUrl = oauth2.redirectUrl;
-        var isValid, qp, arr;
+    
+    // Debug function - uncomment to enable console logging
+    function debugLog(obj) {
+        console.log(obj);
+    }
 
-        if (/code|token|error/.test(window.location.hash)) {
-            qp = window.location.hash.substring(1).replace('/', '');
-        } else {
-            qp = location.search.substring(1);
+    // Parse a query string into an object
+    function parseQueryString(string) {
+        if (string === "") return {};
+        
+        const segments = string.split("&").map(s => s.split("=").map(decodeURIComponent));
+        const queryParams = {};
+        segments.forEach(segment => {
+            if (segment[0]) {
+                queryParams[segment[0]] = segment[1] || "";
+            }
+        });
+        return queryParams;
+    }
+
+    // Handle OAuth2 redirect
+    function run() {
+        const oauth2 = window.opener.swaggerUIRedirectOauth2;
+        const sentState = oauth2.state;
+        
+        debugLog("Starting OAuth2 redirect handler");
+        debugLog("URL: " + window.location.href);
+        
+        // Parse query params from search and hash portions of URL
+        const queryParams = {
+            ...parseQueryString(window.location.search.substring(1)),
+            ...parseQueryString(window.location.hash.substring(1))
+        };
+        
+        debugLog("Parsed params:");
+        debugLog(queryParams);
+
+        // Check for error
+        if (queryParams.error) {
+            oauth2.error = queryParams.error;
+            if (queryParams.error_description) oauth2.errorDescription = queryParams.error_description;
+            debugLog("Error from auth service: " + queryParams.error);
+            window.close();
+            return;
+        }
+        
+        // Check state for CSRF protection
+        if (!queryParams.state || queryParams.state !== sentState) {
+            debugLog("OAuth state mismatch: " + queryParams.state + " != " + sentState);
+            oauth2.error = "OAuth security error";
+            oauth2.errorDescription = "State mismatch";
+            window.close();
+            return;
         }
 
-        arr = qp.split("&");
-        arr.forEach(function (v,i,_arr) { _arr[i] = '"' + v.replace('=', '":"') + '"';});
-        qp = qp ? JSON.parse('{' + arr.join() + '}',
-                function (key, value) {
-                    return key === "" ? value : decodeURIComponent(value)
-                }
-        ) : {};
-
-        isValid = qp.state === sentState;
-
-        if ((
-          oauth2.auth.schema.get("flow") === "accessCode" ||
-          oauth2.auth.schema.get("flow") === "authorizationCode" ||
-          oauth2.auth.schema.get("type") === "oauth2") && !oauth2.auth.code) {
-            if (!isValid) {
-                oauth2.errCb({
-                    authId: oauth2.auth.name,
-                    source: "auth",
-                    level: "warning",
-                    message: "Authorization may be unsafe, passed state was changed in server Passed state wasn't returned from auth server"
-                });
-            }
-
-            if (qp.code) {
-                delete oauth2.state;
-                oauth2.auth.code = qp.code;
-                oauth2.callback({auth: oauth2.auth, redirectUrl: redirectUrl});
-            } else {
-                let oauthErrorMsg;
-                if (qp.error) {
-                    oauthErrorMsg = "["+qp.error+"]: " +
-                        (qp.error_description ? qp.error_description+ ". " : "no accessCode received from the server. ") +
-                        (qp.error_uri ? "More info: "+qp.error_uri : "");
-                }
-
-                oauth2.errCb({
-                    authId: oauth2.auth.name,
-                    source: "auth",
-                    level: "error",
-                    message: oauthErrorMsg || "[Authorization failed]: no accessCode received from the server"
-                });
-            }
-        } else {
-            oauth2.callback({auth: oauth2.auth, token: qp, isValid: isValid, redirectUrl: redirectUrl});
+        // Handle authorization code
+        if (queryParams.code) {
+            debugLog("Received authorization code");
+            oauth2.code = queryParams.code;
+            window.close();
+            return;
         }
+
+        // Handle access token (implicit flow)
+        if (queryParams.access_token) {
+            debugLog("Received access token");
+            oauth2.accessToken = queryParams.access_token;
+            oauth2.tokenType = queryParams.token_type;
+            oauth2.expiresIn = queryParams.expires_in;
+            if (queryParams.scope) oauth2.scopes = queryParams.scope.split(" ");
+            window.close();
+            return;
+        }
+        
+        // Handle ID token
+        if (queryParams.id_token) {
+            debugLog("Received ID token");
+            oauth2.idToken = queryParams.id_token;
+            if (queryParams.token_type) oauth2.tokenType = queryParams.token_type || "Bearer";
+            window.close();
+            return;
+        }
+
+        debugLog("No token or code received!");
+        oauth2.error = "No authorization code or token received";
         window.close();
     }
 
-    if (document.readyState !== 'loading') {
+    window.addEventListener('DOMContentLoaded', function() {
         run();
-    } else {
-        document.addEventListener('DOMContentLoaded', function () {
-            run();
-        });
-    }
+    });
 </script>
 </body>
 </html>

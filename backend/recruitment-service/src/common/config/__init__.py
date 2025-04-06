@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     
     # Swagger UI OAuth Settings
     SWAGGER_UI_CLIENT_ID: str  # Same as AZURE_AD_B2C_CLIENT_ID or specific client for Swagger
-    SWAGGER_UI_OAUTH_REDIRECT_URL: str = "http://localhost:8000/docs/oauth2-redirect"
+    SWAGGER_UI_OAUTH_REDIRECT_URL: str = "http://localhost:8000/docs/oauth2-redirect.html"
     
     # CORS - Fix to parse comma-separated string from .env
     CORS_ORIGINS: Union[str, List[str]] = "*"

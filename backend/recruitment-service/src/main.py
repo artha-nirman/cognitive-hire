@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import structlog
 from fastapi import FastAPI, HTTPException, Request, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
@@ -12,6 +12,7 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from pathlib import Path
 import os
+from jose import jwt
 
 from src.common.config import settings
 from src.common.db.database import init_db
@@ -99,6 +100,15 @@ async def lifespan(app: FastAPI):
         logger.error("Event system initialization failed", exc_info=e)
         raise
     
+    # Initialize Azure AD B2C authentication
+    try:
+        from src.common.auth.azure_auth import init_azure_auth
+        await init_azure_auth(app)
+        logger.info("Azure AD B2C authentication initialized")
+    except Exception as e:
+        logger.error("Azure AD B2C initialization failed", exc_info=e)
+        raise
+    
     logger.info("Application started successfully")
     
     yield
@@ -118,7 +128,10 @@ async def lifespan(app: FastAPI):
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
     tokenUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
-    scopes={f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"}
+    scopes={
+        "openid": "OpenID Connect authentication",
+        f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"
+    }
 )
 
 # Create FastAPI application
@@ -156,9 +169,17 @@ app.include_router(websocket_router, prefix="/ws")
 # Determine the path to static files
 static_dir = Path(__file__).parent / "static"
 if static_dir.exists():
-    # Mount the static files
+    # Mount the static files at /static
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     logger.info(f"Mounted static files from {static_dir}")
+    
+    # Also mount the oauth2-redirect.html directly at /docs/oauth2-redirect.html to match the expected path
+    oauth2_redirect_path = static_dir / "oauth2-redirect.html"
+    if oauth2_redirect_path.exists():
+        app.mount("/docs", StaticFiles(directory=static_dir, html=True), name="docs_static")
+        logger.info("Mounted OAuth2 redirect file at /docs path")
+    else:
+        logger.warning("OAuth2 redirect file not found at expected location", path=str(oauth2_redirect_path))
 
 # Custom OpenAPI to include security definitions
 def custom_openapi():
@@ -182,6 +203,7 @@ def custom_openapi():
                     "authorizationUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
                     "tokenUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
                     "scopes": {
+                        "openid": "OpenID Connect authentication",
                         f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"
                     }
                 }
@@ -190,7 +212,7 @@ def custom_openapi():
     }
     
     # Apply security to all operations
-    openapi_schema["security"] = [{"oauth2": [f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]}]
+    openapi_schema["security"] = [{"oauth2": ["openid", f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]}]
     
     app.openapi_schema = openapi_schema
     return app.openapi_schema
@@ -203,15 +225,21 @@ async def custom_swagger_ui_html():
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=f"{app.title} - Swagger UI",
-        oauth2_redirect_url="/static/oauth2-redirect.html",
+        oauth2_redirect_url=settings.SWAGGER_UI_OAUTH_REDIRECT_URL,
         init_oauth={
             "clientId": settings.SWAGGER_UI_CLIENT_ID,
             "appName": "Cognitive Hire API Swagger UI",
             "scopeSeparator": " ",
+            "usePkceWithAuthorizationCodeGrant": True,  # Enable PKCE
+            "useBasicAuthenticationWithAccessCodeGrant": False,  # Azure B2C doesn't support this flow
             "additionalQueryStringParams": {
-                "prompt": "login"  # Force login every time
+                "prompt": "login",  # Force login every time
+                "response_type": "token id_token",  # Request both token types
+                "response_mode": "fragment"  # Ensures token is returned in URL fragment
             }
-        }
+        },
+        swagger_js_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",  # Use latest version
+        swagger_css_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css"
     )
 
 @app.get("/redoc", include_in_schema=False)
@@ -220,6 +248,42 @@ async def redoc_html():
         openapi_url=app.openapi_url,
         title=f"{app.title} - ReDoc",
     )
+
+# Add a direct route for the OAuth2 redirect file to avoid caching issues
+@app.get("/docs/oauth2-redirect.html", include_in_schema=False)
+async def oauth2_redirect():
+    """Serve the OAuth2 redirect HTML with no-cache headers."""
+    oauth2_redirect_path = Path(__file__).parent / "static" / "oauth2-redirect.html"
+    
+    if not oauth2_redirect_path.exists():
+        logger.error("OAuth2 redirect file not found", path=str(oauth2_redirect_path))
+        return Response(
+            content="OAuth2 redirect file not found. Please check server configuration.",
+            media_type="text/html", 
+            status_code=500
+        )
+    
+    try:
+        with open(oauth2_redirect_path, "r") as f:
+            content = f.read()
+            
+        logger.debug("Serving OAuth2 redirect file", file_size=len(content))
+        
+        # Add headers to prevent caching
+        headers = {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0"
+        }
+        
+        return Response(content=content, media_type="text/html", headers=headers)
+    except Exception as e:
+        logger.error("Failed to serve OAuth2 redirect file", error=str(e), exc_info=e)
+        return Response(
+            content=f"Error serving OAuth2 redirect file: {str(e)}",
+            media_type="text/html",
+            status_code=500
+        )
 
 # Exception handlers
 @app.exception_handler(HTTPException)
@@ -258,6 +322,47 @@ async def health_check():
     """
     logger.debug("Health check requested")
     return {"status": "healthy"}
+
+# Add a token debugging endpoint
+@app.get("/debug/token-info", include_in_schema=False)
+async def token_info(request: Request):
+    """
+    Debug endpoint to check token information.
+    Only available in development mode.
+    """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return {"error": "No valid Authorization header found"}
+    
+    token = auth_header.replace("Bearer ", "")
+    
+    # Basic token info without validation
+    try:
+        # Just decode without verification to see what's in there
+        header = jwt.get_unverified_header(token)
+        
+        # Decode payload without verification
+        payload_base64 = token.split('.')[1]
+        # Ensure proper padding
+        padding = len(payload_base64) % 4
+        if padding:
+            payload_base64 += '=' * (4 - padding)
+        
+        import base64
+        import json
+        payload_json = base64.b64decode(payload_base64)
+        payload = json.loads(payload_json)
+        
+        return {
+            "header": header,
+            "payload": payload,
+            "token_prefix": token[:10] + "..."
+        }
+    except Exception as e:
+        return {"error": f"Failed to decode token: {str(e)}"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -5,6 +5,7 @@ from typing import List
 from src.common.db.database import get_db
 from src.domains.employer.models import EmployerCreate, EmployerRead, EmployerUpdate
 from src.domains.employer.service import EmployerService
+from src.common.auth.azure_auth import get_current_user
 
 router = APIRouter()
 
@@ -36,6 +37,7 @@ async def get_employer(
 async def list_employers(
     skip: int = 0,
     limit: int = 100,
+    user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """List employers with pagination."""
