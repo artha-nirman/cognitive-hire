@@ -8,96 +8,93 @@
 <script>
     'use strict';
     
-    // Debug function - uncomment to enable console logging
-    function debugLog(obj) {
-        console.log(obj);
-    }
-
-    // Parse a query string into an object
-    function parseQueryString(string) {
-        if (string === "") return {};
+    // Run when the page loads
+    window.onload = function() {
+        console.log("OAuth2 redirect handler loaded");
         
-        const segments = string.split("&").map(s => s.split("=").map(decodeURIComponent));
-        const queryParams = {};
-        segments.forEach(segment => {
-            if (segment[0]) {
-                queryParams[segment[0]] = segment[1] || "";
+        // Get the OAuth2 client from Swagger UI
+        var oauth2 = window.opener.swaggerUIRedirectOauth2;
+        if (!oauth2) {
+            console.error("Unable to find swaggerUIRedirectOauth2 in opener");
+            document.body.innerHTML = "<h1>Error: OAuth2 redirect handler failed</h1><p>Could not find swaggerUIRedirectOauth2 in opener. This might happen if the redirect was called directly or if the Swagger UI wasn't the opener.</p>";
+            return;
+        }
+        
+        var sentState = oauth2.state;
+        var redirectUrl = oauth2.redirectUrl;
+        var isValid, qp, arr;
+
+        console.log("OAuth2 redirect handler processing response");
+
+        // Handle both hash (fragment) and query parameter response modes
+        if (/code|token|error/.test(window.location.hash)) {
+            qp = window.location.hash.substring(1);
+            console.log("Extracted from hash fragment");
+        } else {
+            qp = location.search.substring(1);
+            console.log("Extracted from query string");
+        }
+
+        // Parse the query parameters
+        arr = qp.split("&");
+        arr.forEach(function (v,i,_arr) { _arr[i] = '"' + v.replace('=', '":"') + '"';});
+        qp = qp ? JSON.parse('{' + arr.join() + '}',
+                function (key, value) {
+                    return key === "" ? value : decodeURIComponent(value);
+                }
+        ) : {};
+
+        console.log("Parsed response parameters, code present:", !!qp.code);
+
+        // Check state validation
+        isValid = qp.state === sentState;
+        if (!isValid) {
+            console.warn("OAuth2 state mismatch:", sentState, "vs", qp.state);
+        }
+
+        // Handle authorization code flow
+        if (oauth2.auth.schema.get("flow") === "accessCode" ||
+            oauth2.auth.schema.get("flow") === "authorizationCode" ||
+            oauth2.auth.schema.get("flow") === "authorization_code") {
+            
+            if (qp.code) {
+                // Clear state and set the code in the auth object
+                delete oauth2.state;
+                oauth2.auth.code = qp.code;
+                
+                console.log("Authorization code received, passing back to Swagger UI");
+                
+                // Let Swagger UI handle the token exchange with PKCE
+                oauth2.callback({auth: oauth2.auth, redirectUrl: redirectUrl});
+            } else {
+                // Handle errors
+                let oauthErrorMsg;
+                if (qp.error) {
+                    oauthErrorMsg = "["+qp.error+"]: " +
+                        (qp.error_description ? qp.error_description+ ". " : "no code received from the server. ") +
+                        (qp.error_uri ? "More info: "+qp.error_uri : "");
+                }
+
+                oauth2.errCb({
+                    authId: oauth2.auth.name,
+                    source: "auth",
+                    level: "error",
+                    message: oauthErrorMsg || "[Authorization failed]: no authorization code received from the server."
+                });
             }
-        });
-        return queryParams;
-    }
-
-    // Handle OAuth2 redirect
-    function run() {
-        const oauth2 = window.opener.swaggerUIRedirectOauth2;
-        const sentState = oauth2.state;
-        
-        debugLog("Starting OAuth2 redirect handler");
-        debugLog("URL: " + window.location.href);
-        
-        // Parse query params from search and hash portions of URL
-        const queryParams = {
-            ...parseQueryString(window.location.search.substring(1)),
-            ...parseQueryString(window.location.hash.substring(1))
-        };
-        
-        debugLog("Parsed params:");
-        debugLog(queryParams);
-
-        // Check for error
-        if (queryParams.error) {
-            oauth2.error = queryParams.error;
-            if (queryParams.error_description) oauth2.errorDescription = queryParams.error_description;
-            debugLog("Error from auth service: " + queryParams.error);
-            window.close();
-            return;
+        } else {
+            // Handle implicit flow
+            oauth2.callback({auth: oauth2.auth, token: qp, isValid: isValid, redirectUrl: redirectUrl});
         }
         
-        // Check state for CSRF protection
-        if (!queryParams.state || queryParams.state !== sentState) {
-            debugLog("OAuth state mismatch: " + queryParams.state + " != " + sentState);
-            oauth2.error = "OAuth security error";
-            oauth2.errorDescription = "State mismatch";
-            window.close();
-            return;
-        }
-
-        // Handle authorization code
-        if (queryParams.code) {
-            debugLog("Received authorization code");
-            oauth2.code = queryParams.code;
-            window.close();
-            return;
-        }
-
-        // Handle access token (implicit flow)
-        if (queryParams.access_token) {
-            debugLog("Received access token");
-            oauth2.accessToken = queryParams.access_token;
-            oauth2.tokenType = queryParams.token_type;
-            oauth2.expiresIn = queryParams.expires_in;
-            if (queryParams.scope) oauth2.scopes = queryParams.scope.split(" ");
-            window.close();
-            return;
-        }
-        
-        // Handle ID token
-        if (queryParams.id_token) {
-            debugLog("Received ID token");
-            oauth2.idToken = queryParams.id_token;
-            if (queryParams.token_type) oauth2.tokenType = queryParams.token_type || "Bearer";
-            window.close();
-            return;
-        }
-
-        debugLog("No token or code received!");
-        oauth2.error = "No authorization code or token received";
+        // Close the popup window
         window.close();
-    }
-
-    window.addEventListener('DOMContentLoaded', function() {
-        run();
-    });
+    };
 </script>
+<div id="content">
+    <h1>OAuth2 Authorization Response</h1>
+    <p>The authorization has completed. This window will close automatically.</p>
+    <p>If this window doesn't close automatically, please close it and return to the application.</p>
+</div>
 </body>
 </html>

@@ -13,6 +13,7 @@ router = APIRouter()
 @router.post("/", response_model=EmployerRead, status_code=status.HTTP_201_CREATED)
 async def create_employer(
     employer: EmployerCreate,
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new employer (organization)."""
@@ -23,6 +24,7 @@ async def create_employer(
 @router.get("/{employer_id}", response_model=EmployerRead)
 async def get_employer(
     employer_id: str,
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Get employer by ID."""
@@ -37,7 +39,7 @@ async def get_employer(
 async def list_employers(
     skip: int = 0,
     limit: int = 100,
-    user=Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """List employers with pagination."""
@@ -49,6 +51,7 @@ async def list_employers(
 async def update_employer(
     employer_id: str,
     employer: EmployerUpdate,
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Update an employer."""
@@ -62,6 +65,7 @@ async def update_employer(
 @router.delete("/{employer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_employer(
     employer_id: str,
+    current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete an employer."""

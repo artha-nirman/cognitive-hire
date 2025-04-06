@@ -22,9 +22,7 @@ from src.domains.job.router import router as job_router
 from src.domains.publishing.router import router as publishing_router
 from src.domains.screening.router import router as screening_router
 from src.domains.sourcing.router import router as sourcing_router
-from src.common.middleware.logging import RequestLoggingMiddleware
-from src.common.middleware.auth import AuthMiddleware
-from src.common.middleware.tenant import TenantMiddleware
+# Removed middleware imports
 from src.common.websocket.handlers import handle_job_event, handle_screening_event, handle_sourcing_event
 from src.websocket.routes import router as websocket_router
 
@@ -130,7 +128,7 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
     tokenUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
     scopes={
         "openid": "OpenID Connect authentication",
-        f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"
+        settings.azure_ad_b2c_scope: "Access API"
     }
 )
 
@@ -168,11 +166,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add custom middleware
-app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(AuthMiddleware)
-app.add_middleware(TenantMiddleware)
-
 # Include routers from all domains
 app.include_router(employer_router, prefix="/api/employer", tags=["Employer"])
 app.include_router(job_router, prefix="/api/jobs", tags=["Jobs"])
@@ -206,6 +199,9 @@ def custom_openapi():
         routes=app.routes,
     )
     
+    # Ensure OpenAPI version is explicitly set
+    openapi_schema["openapi"] = "3.0.2"
+    
     # Add security scheme
     openapi_schema["components"] = openapi_schema.get("components", {})
     openapi_schema["components"]["securitySchemes"] = {
@@ -217,7 +213,7 @@ def custom_openapi():
                     "tokenUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
                     "scopes": {
                         "openid": "OpenID Connect authentication",
-                        f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation": "Access API"
+                        settings.azure_ad_b2c_scope: "Access API"
                     }
                 }
             }
@@ -235,21 +231,22 @@ def custom_openapi():
         
         # Allow either oauth2 OR authBypass (not both required)
         openapi_schema["security"] = [
-            {"oauth2": ["openid", f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]},
+            {"oauth2": ["openid", settings.azure_ad_b2c_scope]},
             {"authBypass": []}  # Using OR relationship between security schemes
         ]
     else:
         # In non-development environments, only use OAuth2
-        openapi_schema["security"] = [{"oauth2": ["openid", f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"]}]
+        openapi_schema["security"] = [{"oauth2": ["openid", settings.azure_ad_b2c_scope]}]
     
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
 app.openapi = custom_openapi
 
-# Custom Swagger UI with Azure AD B2C configuration
+# Update Swagger UI configuration to avoid duplicate response_type parameters
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
+    """Serve Swagger UI with adjusted OAuth2 configuration for Azure AD B2C."""
     return get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=f"{app.title} - Swagger UI",
@@ -258,17 +255,111 @@ async def custom_swagger_ui_html():
             "clientId": settings.SWAGGER_UI_CLIENT_ID,
             "appName": "Cognitive Hire API Swagger UI",
             "scopeSeparator": " ",
-            "usePkceWithAuthorizationCodeGrant": True,
-            "useBasicAuthenticationWithAccessCodeGrant": False,
+            "usePkceWithAuthorizationCodeGrant": True,  # Enable PKCE
             "additionalQueryStringParams": {
-                "prompt": "login",
-                "response_type": "token id_token",
-                "response_mode": "fragment"
+                # Don't include response_type here, Swagger UI adds it automatically
+                "response_mode": settings.AZURE_AD_B2C_RESPONSE_MODE
             }
         },
-        swagger_js_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js",
-        swagger_css_url="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css"
+        swagger_js_url="https://unpkg.com/swagger-ui-dist@4.18.1/swagger-ui-bundle.js",
+        swagger_css_url="https://unpkg.com/swagger-ui-dist@4.18.1/swagger-ui.css"
     )
+
+# Use a simple redirect handler
+@app.get("/docs/oauth2-redirect.html", include_in_schema=False)
+async def oauth2_redirect():
+    """Serve the standard OAuth2 redirect HTML."""
+    oauth2_redirect_path = Path(__file__).parent / "static" / "oauth2-redirect.html"
+    
+    headers = {
+        "Cache-Control": "no-store",
+        "Pragma": "no-cache"
+    }
+    
+    # If file exists, serve it
+    if oauth2_redirect_path.exists():
+        with open(oauth2_redirect_path, "r") as f:
+            content = f.read()
+        return Response(content=content, media_type="text/html", headers=headers)
+    
+    # Otherwise, use the embedded version
+    html_content = """
+<!doctype html>
+<html lang="en-US">
+<head>
+    <title>Swagger UI: OAuth2 Redirect</title>
+</head>
+<body>
+<script>
+    'use strict';
+    function run () {
+        var oauth2 = window.opener.swaggerUIRedirectOauth2;
+        var sentState = oauth2.state;
+        var redirectUrl = oauth2.redirectUrl;
+        var isValid, qp, arr;
+
+        if (/code|token|error/.test(window.location.hash)) {
+            qp = window.location.hash.substring(1);
+        } else {
+            qp = location.search.substring(1);
+        }
+
+        arr = qp.split("&");
+        arr.forEach(function (v,i,_arr) { _arr[i] = '"' + v.replace('=', '":"') + '"';});
+        qp = qp ? JSON.parse('{' + arr.join() + '}',
+                function (key, value) {
+                    return key === "" ? value : decodeURIComponent(value);
+                }
+        ) : {};
+
+        isValid = qp.state === sentState;
+
+        if (oauth2.auth.schema.get("flow") === "accessCode" ||
+            oauth2.auth.schema.get("flow") === "authorizationCode" ||
+            oauth2.auth.schema.get("flow") === "authorization_code") {
+            if (!isValid) {
+                oauth2.errCb({
+                    authId: oauth2.auth.name,
+                    source: "auth",
+                    level: "warning",
+                    message: "Authorization may be unsafe, passed state was changed in server. The passed state wasn't returned from auth server."
+                });
+            }
+
+            if (qp.code) {
+                delete oauth2.state;
+                oauth2.auth.code = qp.code;
+                oauth2.callback({auth: oauth2.auth, redirectUrl: redirectUrl});
+            } else {
+                let oauthErrorMsg;
+                if (qp.error) {
+                    oauthErrorMsg = "["+qp.error+"]: " +
+                        (qp.error_description ? qp.error_description+ ". " : "no accessCode received from the server. ") +
+                        (qp.error_uri ? "More info: "+qp.error_uri : "");
+                }
+
+                oauth2.errCb({
+                    authId: oauth2.auth.name,
+                    source: "auth",
+                    level: "error",
+                    message: oauthErrorMsg || "[Authorization failed]: no accessCode received from the server."
+                });
+            }
+        } else {
+            oauth2.callback({auth: oauth2.auth, token: qp, isValid: isValid, redirectUrl: redirectUrl});
+        }
+        
+        window.close();
+    }
+
+    window.addEventListener('DOMContentLoaded', function () {
+        run();
+    });
+</script>
+</body>
+</html>
+    """
+    return Response(content=html_content, media_type="text/html", headers=headers)
 
 @app.get("/redoc", include_in_schema=False)
 async def redoc_html():
@@ -276,39 +367,6 @@ async def redoc_html():
         openapi_url=app.openapi_url,
         title=f"{app.title} - ReDoc",
     )
-
-# Add a direct route for the OAuth2 redirect file to avoid caching issues
-@app.get("/docs/oauth2-redirect.html", include_in_schema=False)
-async def oauth2_redirect():
-    """Serve the OAuth2 redirect HTML with no-cache headers."""
-    oauth2_redirect_path = Path(__file__).parent / "static" / "oauth2-redirect.html"
-    
-    if not oauth2_redirect_path.exists():
-        logger.error("OAuth2 redirect file not found", path=str(oauth2_redirect_path))
-        return Response(
-            content="OAuth2 redirect file not found. Please check server configuration.",
-            media_type="text/html", 
-            status_code=500
-        )
-    
-    try:
-        with open(oauth2_redirect_path, "r") as f:
-            content = f.read()
-        logger.debug("Serving OAuth2 redirect file", file_size=len(content))
-        # Add headers to prevent caching
-        headers = {
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0"
-        }
-        return Response(content=content, media_type="text/html", headers=headers)
-    except Exception as e:
-        logger.error("Failed to serve OAuth2 redirect file", error=str(e), exc_info=e)
-        return Response(
-            content=f"Error serving OAuth2 redirect file: {str(e)}",
-            media_type="text/html",
-            status_code=500
-        )
 
 # Exception handlers
 @app.exception_handler(HTTPException)
@@ -345,7 +403,7 @@ async def health_check():
     logger.debug("Health check requested")
     return {"status": "healthy"}
 
-# Add a token debugging endpoint
+# Enhanced token debugging endpoint
 @app.get("/debug/token-info", include_in_schema=False)
 async def token_info(request: Request):
     """
@@ -355,36 +413,44 @@ async def token_info(request: Request):
     if settings.ENVIRONMENT != "development":
         raise HTTPException(status_code=404, detail="Not found")
     
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        return {"error": "No valid Authorization header found"}
+    from src.debug.token_debug import get_auth_debug_info
     
-    token = auth_header.replace("Bearer ", "")
+    # Get detailed token debugging info
+    debug_info = get_auth_debug_info(request)
     
-    # Basic token info without validation
-    try:
-        # Just decode without verification to see what's in there
-        header = jwt.get_unverified_header(token)
+    return debug_info
+
+# Add an auth test endpoint for development
+@app.get("/debug/auth-test", include_in_schema=False)
+async def auth_test(request: Request):
+    """
+    Debug endpoint that requires authentication.
+    Only available in development mode.
+    """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
         
-        # Decode payload without verification
-        payload_base64 = token.split('.')[1]
-        # Ensure proper padding
-        padding = len(payload_base64) % 4
-        if padding:
-            payload_base64 += '=' * (4 - padding)
+    # Should only reach here if authentication succeeded
+    return {
+        "authenticated": True,
+        "user": request.state.user if hasattr(request.state, "user") else None,
+        "user_id": request.state.user_id if hasattr(request.state, "user_id") else None,
+        "roles": request.state.roles if hasattr(request.state, "roles") else None,
+    }
+
+# Add authentication help endpoint for development
+@app.get("/debug/auth-help", include_in_schema=False)
+async def auth_help_endpoint():
+    """
+    Debug endpoint providing authentication help.
+    Only available in development mode.
+    """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
         
-        import base64
-        import json
-        payload_json = base64.b64decode(payload_base64)
-        payload = json.loads(payload_json)
-        
-        return {
-            "header": header,
-            "payload": payload,
-            "token_prefix": token[:10] + "..."
-        }
-    except Exception as e:
-        return {"error": f"Failed to decode token: {str(e)}"}
+    from src.debug.token_debug import get_auth_help_info
+    
+    return get_auth_help_info()
 
 if __name__ == "__main__":
     import uvicorn

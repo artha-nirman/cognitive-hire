@@ -1,74 +1,77 @@
-import structlog
 from typing import Dict, Any
+import structlog
+import json
 
+# Updated import path to avoid circular dependency
 from src.websocket.routes import broadcast_to_channel
 
 logger = structlog.get_logger(__name__)
 
 async def handle_job_event(event_data: Dict[str, Any]) -> None:
     """
-    Handle job-related events and broadcast to WebSocket clients.
+    Handle job-related events and broadcast to WebSockets.
     
     Args:
-        event_data: The event data payload
+        event_data: The event payload
     """
     job_id = event_data.get("job_id")
     if not job_id:
         logger.warning("Job event missing job_id", event_data=event_data)
         return
-        
-    # Broadcast to job updates channel
-    channel = f"job-updates:{job_id}"
-    await broadcast_to_channel(channel, event_data)
     
-    logger.info(
-        "Broadcast job event to WebSocket clients", 
-        job_id=job_id,
-        event_type=event_data.get("type", "unknown")
-    )
-
+    channel = f"job:{job_id}"
+    message = {
+        "type": "job_update",
+        "job_id": job_id,
+        "event_type": event_data.get("type", "unknown"),
+        "data": event_data
+    }
+    
+    logger.debug("Broadcasting job event to WebSocket", channel=channel, event_type=message["event_type"])
+    await broadcast_to_channel(channel, message)
 
 async def handle_screening_event(event_data: Dict[str, Any]) -> None:
     """
-    Handle screening-related events and broadcast to WebSocket clients.
+    Handle screening-related events and broadcast to WebSockets.
     
     Args:
-        event_data: The event data payload
+        event_data: The event payload
     """
     job_id = event_data.get("job_id")
     if not job_id:
         logger.warning("Screening event missing job_id", event_data=event_data)
         return
-        
-    # Broadcast to screening channel
-    channel = f"screening:{job_id}"
-    await broadcast_to_channel(channel, event_data)
     
-    logger.info(
-        "Broadcast screening event to WebSocket clients", 
-        job_id=job_id,
-        event_type=event_data.get("type", "unknown")
-    )
-
+    channel = f"screening:{job_id}"
+    message = {
+        "type": "screening_update",
+        "job_id": job_id,
+        "event_type": event_data.get("type", "unknown"),
+        "data": event_data
+    }
+    
+    logger.debug("Broadcasting screening event to WebSocket", channel=channel, event_type=message["event_type"])
+    await broadcast_to_channel(channel, message)
 
 async def handle_sourcing_event(event_data: Dict[str, Any]) -> None:
     """
-    Handle sourcing-related events and broadcast to WebSocket clients.
+    Handle sourcing-related events and broadcast to WebSockets.
     
     Args:
-        event_data: The event data payload
+        event_data: The event payload
     """
     job_id = event_data.get("job_id")
     if not job_id:
         logger.warning("Sourcing event missing job_id", event_data=event_data)
         return
-        
-    # Broadcast to sourcing channel
-    channel = f"sourcing:{job_id}"
-    await broadcast_to_channel(channel, event_data)
     
-    logger.info(
-        "Broadcast sourcing event to WebSocket clients", 
-        job_id=job_id,
-        event_type=event_data.get("type", "unknown")
-    )
+    channel = f"sourcing:{job_id}"
+    message = {
+        "type": "sourcing_update",
+        "job_id": job_id,
+        "event_type": event_data.get("type", "unknown"),
+        "data": event_data
+    }
+    
+    logger.debug("Broadcasting sourcing event to WebSocket", channel=channel, event_type=message["event_type"])
+    await broadcast_to_channel(channel, message)

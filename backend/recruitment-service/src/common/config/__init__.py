@@ -29,8 +29,9 @@ class Settings(BaseSettings):
     AZURE_AD_B2C_CLIENT_ID: str
     AZURE_AD_B2C_CLIENT_SECRET: str
     AZURE_AD_B2C_SIGNIN_POLICY: str = "B2C_1_signupsignin1"
-    AZURE_AD_B2C_AUTHORITY: str = "{tenant_name}.b2clogin.com"
-    AZURE_AD_B2C_SCOPE: str = "https://{tenant_name}.onmicrosoft.com/api/user_impersonation"
+    AZURE_AD_B2C_RESPONSE_MODE: str = "query"  # Updated from fragment to query
+    AZURE_AD_B2C_RESPONSE_TYPE: str = "code"   # Explicitly set response type
+    # Remove the static SCOPE setting as it's now a computed property
     
     # Swagger UI OAuth Settings
     SWAGGER_UI_CLIENT_ID: str  # Same as AZURE_AD_B2C_CLIENT_ID or specific client for Swagger
@@ -85,6 +86,14 @@ class Settings(BaseSettings):
         if self.DATABASE_URL.startswith("postgresql://"):
             return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
         return self.DATABASE_URL
+    
+    @property
+    def azure_ad_b2c_scope(self) -> str:
+        """Return the properly formatted scope for Azure AD B2C."""
+        return f"https://{self.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/api/user_impersonation"
+        # Note: This scope format might vary depending on how your API is registered
+        # Alternative format sometimes seen:
+        # return f"https://{self.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{self.AZURE_AD_B2C_CLIENT_ID}/user_impersonation"
     
     model_config = SettingsConfigDict(
         env_file=".env",
