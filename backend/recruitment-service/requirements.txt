@@ -17,8 +17,7 @@ python-jose>=3.3.0
 passlib>=1.7.4
 python-multipart>=0.0.6
 bcrypt>=4.0.1
-fastapi-azure-auth==4.2.0  # FastAPI integration for Azure AD authentication
-msal==1.22.0  # Microsoft Authentication Library
+fastapi-azure-auth>=4.2.0  # Specialized FastAPI integration for Azure AD authentication
 
 # Event Handling
 redis>=5.0.0

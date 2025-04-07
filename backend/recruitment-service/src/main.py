@@ -6,7 +6,6 @@ from fastapi import FastAPI, HTTPException, Request, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -183,19 +182,6 @@ app.include_router(publishing_router, prefix="/api/publishing", tags=["Publishin
 app.include_router(screening_router, prefix="/api/screening", tags=["Screening"])
 app.include_router(sourcing_router, prefix="/api/sourcing", tags=["Sourcing"])
 app.include_router(websocket_router, prefix="/ws")
-
-# Determine the path to static files
-static_dir = Path(__file__).parent / "static"
-if static_dir.exists():
-    # Mount the static files at /static
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
-    logger.info(f"Mounted static files from {static_dir}")
-    
-    # Don't mount the /docs path directly with StaticFiles
-    # Instead, use our explicit routes below
-    oauth2_redirect_path = static_dir / "oauth2-redirect.html"
-    if not oauth2_redirect_path.exists():
-        logger.warning("OAuth2 redirect file not found at expected location", path=str(oauth2_redirect_path))
 
 # Exception handlers
 @app.exception_handler(HTTPException)

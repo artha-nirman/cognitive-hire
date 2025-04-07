@@ -120,7 +120,7 @@ class Settings(BaseSettings):
     @property
     def oauth2_redirect_path(self) -> str:
         """Return the OAuth2 redirect path for Swagger UI."""
-        return "/docs/oauth2-redirect.html"
+        return "/docs/oauth2-redirect"
     
     @property
     def oauth2_redirect_url(self) -> str:

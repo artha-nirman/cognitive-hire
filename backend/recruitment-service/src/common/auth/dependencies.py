@@ -2,124 +2,35 @@ from fastapi import Depends, HTTPException, Request, status, Header, Security, F
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, OAuth2AuthorizationCodeBearer
 import structlog
 from typing import Dict, Optional, Any
-import msal
 from jose import jwt
+from fastapi_azure_auth import B2CMultiTenantAuthorizationCodeBearer
+from fastapi_azure_auth.exceptions import InvalidAuth
+from fastapi_azure_auth.user import User
 
 from src.common.config import settings
 
 logger = structlog.get_logger(__name__)
 
-# Security schemes
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
-    tokenUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
+# Create B2C auth instance using the fastapi-azure-auth library
+auth = B2CMultiTenantAuthorizationCodeBearer(
+    app_client_id=settings.AZURE_AD_B2C_CLIENT_ID,
+    openid_config_url=settings.openid_config_url,
+    openapi_authorization_url=f'https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize',
+    openapi_token_url=f'https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token',
     scopes={
-        "openid": "OpenID Connect authentication", 
+        "openid": "OpenID Connect authentication",
         settings.azure_ad_b2c_scope: "Access API"
     },
-    auto_error=False
+    validate_iss=False,
 )
 
-# HTTP Bearer security scheme that doesn't auto error
-bearer_scheme = HTTPBearer(auto_error=False)
-
-# MSAL configuration
-msal_config = {
-    "tenant": f"{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com",
-    "client_id": settings.AZURE_AD_B2C_CLIENT_ID,
-    "client_credential": settings.AZURE_AD_B2C_CLIENT_SECRET,
-    "authority": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}",
-}
-
-# MSAL application instance
-app_instance = None
-
 async def init_azure_auth(app: FastAPI) -> None:
-    """Initialize Microsoft Authentication Library (MSAL) for Azure AD B2C."""
-    global app_instance
+    """Initialize Azure AD B2C authentication."""
     logger.info("Initializing Azure AD B2C authentication")
     
     try:
-        # Create MSAL confidential client application
-        app_instance = msal.ConfidentialClientApplication(
-            msal_config["client_id"],
-            authority=msal_config["authority"],
-            client_credential=msal_config["client_credential"]
-        )
-        
-        # Register token exchange route
-        from pydantic import BaseModel
-        
-        class TokenExchangeRequest(BaseModel):
-            code: str
-            redirect_uri: str
-            code_verifier: Optional[str] = None  # PKCE code verifier
-            
-        @app.post("/auth/token")
-        async def exchange_code_for_token(request_data: TokenExchangeRequest):
-            """
-            Exchange an OAuth2 authorization code for a token.
-            
-            Args:
-                request_data: Authorization code and redirect URI
-            
-            Returns:
-                Access token and related information
-            """
-            if not app_instance:
-                logger.error("Authentication not initialized")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Authentication not initialized"
-                )
-            
-            try:
-                logger.info("Exchanging code for token", 
-                            code_prefix=request_data.code[:10] if len(request_data.code) > 10 else "***",
-                            redirect_uri=request_data.redirect_uri)
-                
-                # Using MSAL to handle the code-to-token exchange
-                scopes = [settings.azure_ad_b2c_scope]
-                
-                # Prepare the kwargs for acquire_token_by_authorization_code
-                kwargs = {
-                    "code": request_data.code,
-                    "scopes": scopes,
-                    "redirect_uri": request_data.redirect_uri
-                }
-                
-                # Add code_verifier if provided (for PKCE)
-                if request_data.code_verifier:
-                    kwargs["code_verifier"] = request_data.code_verifier
-                
-                # Exchange code for token
-                result = app_instance.acquire_token_by_authorization_code(**kwargs)
-                
-                if "error" in result:
-                    logger.error(
-                        "Token acquisition failed", 
-                        error=result.get("error"),
-                        description=result.get("error_description")
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Token acquisition failed: {result.get('error')}: {result.get('error_description')}"
-                    )
-                
-                logger.info("Code exchanged for token successfully", 
-                            token_type=result.get("token_type"),
-                            scope=result.get("scope", "").split())
-                
-                return result
-            except HTTPException:
-                raise
-            except Exception as e:
-                logger.error("Failed to exchange code for token", exc_info=e)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Token exchange failed: {str(e)}"
-                )
-        
+        # No need for MSAL initialization
+        # The auth instance is already created above
         logger.info("Azure AD B2C authentication initialized successfully", 
                    client_id=settings.AZURE_AD_B2C_CLIENT_ID,
                    tenant=settings.AZURE_AD_B2C_TENANT_NAME,
@@ -131,8 +42,7 @@ async def init_azure_auth(app: FastAPI) -> None:
 
 async def get_current_user(
     request: Request,
-    oauth2_token: Optional[str] = Security(oauth2_scheme),
-    bearer_token: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme),
+    user: Optional[User] = Security(auth),
     x_auth_bypass: Optional[str] = Header(None)
 ) -> Dict[str, Any]:
     """
@@ -142,8 +52,7 @@ async def get_current_user(
     
     Args:
         request: The HTTP request
-        oauth2_token: OAuth2 token from Swagger UI Auth
-        bearer_token: Bearer token from Authorization header
+        user: User from Azure AD B2C authentication
         x_auth_bypass: Optional bypass token header
         
     Returns:
@@ -152,10 +61,17 @@ async def get_current_user(
     Raises:
         HTTPException: If authentication fails
     """
+    # Debug logging to help identify authentication issues
+    logger.debug("Auth attempt",
+               has_user=user is not None,
+               has_bypass=x_auth_bypass is not None,
+               bypass_enabled=settings.AUTH_BYPASS_ENABLED,
+               environment=settings.ENVIRONMENT)
+    
     # Development bypass for testing
     if settings.ENVIRONMENT in ["development", "testing"] and settings.AUTH_BYPASS_ENABLED:
         if x_auth_bypass == settings.AUTH_BYPASS_TOKEN:
-            logger.warning("Authentication bypassed with token")
+            logger.info("Authentication bypassed with token")
             return {
                 "sub": "test-user-id",
                 "name": "Test User",
@@ -163,48 +79,59 @@ async def get_current_user(
                 "tenant_id": request.headers.get("X-Test-Tenant-ID", "default-tenant")
             }
     
-    # Get token from either oauth2 or bearer auth
-    token = None
-    if bearer_token:
-        token = bearer_token.credentials
-    elif oauth2_token:
-        token = oauth2_token
-    
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-    
-    try:
-        # In a real implementation, validate the token
-        # For now, we'll just decode it without verification
-        payload = jwt.decode(
-            token, 
-            options={"verify_signature": False}
-        )
+    # Check if we have a valid User object from Azure auth
+    if user:
+        logger.info("B2C authentication successful", 
+                   user_id=user.claims.get("sub", "unknown"))
         
-        logger.info("Token validation successful", 
-                  user_id=payload.get("sub", "unknown"),
-                  token_prefix=token[:10] if token else "none")
-        
-        # Extract and return user information
+        # Extract and return user information from the User object
         return {
-            "sub": payload.get("sub"),
-            "name": payload.get("name"),
-            "email": payload.get("emails", [payload.get("email", "")])[0] if isinstance(payload.get("emails"), list) else payload.get("email"),
-            "roles": payload.get("roles", []),
-            "tenant_id": payload.get("tid") or payload.get("tenant_id"),
-            "token": token  # Include the token for potential reuse
+            "sub": user.claims.get("sub"),
+            "name": user.claims.get("name"),
+            "email": user.claims.get("emails", [user.claims.get("email", "")])[0] if isinstance(user.claims.get("emails"), list) else user.claims.get("email"),
+            "roles": user.claims.get("roles", []),
+            "tenant_id": user.claims.get("tid") or user.claims.get("tenant_id"),
+            "token": user.token  # The token is available on the User object
         }
-    except Exception as e:
-        logger.error("Token validation failed", error=str(e))
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
+    
+    # Try to get token from Authorization header as fallback
+    auth_header = request.headers.get("Authorization", "")
+    token = None
+    
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    
+    if token:
+        try:
+            # In a real implementation, validate the token
+            # For now, we'll just decode it without verification
+            payload = jwt.decode(
+                token, 
+                options={"verify_signature": False}
+            )
+            
+            logger.info("Token validation successful", 
+                      user_id=payload.get("sub", "unknown"),
+                      token_prefix=token[:10] if token else "none")
+            
+            # Extract and return user information
+            return {
+                "sub": payload.get("sub"),
+                "name": payload.get("name"),
+                "email": payload.get("emails", [payload.get("email", "")])[0] if isinstance(payload.get("emails"), list) else payload.get("email"),
+                "roles": payload.get("roles", []),
+                "tenant_id": payload.get("tid") or payload.get("tenant_id"),
+                "token": token  # Include the token for potential reuse
+            }
+        except Exception as e:
+            logger.error("Token validation failed", error=str(e))
+    
+    logger.warning("Authentication failed - no valid credentials provided")
+    raise HTTPException(
+        status_code=401,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"}
+    )
 
 async def get_tenant_id(request: Request, user: Dict[str, Any] = Depends(get_current_user)) -> str:
     """
