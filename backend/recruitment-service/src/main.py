@@ -100,7 +100,7 @@ async def lifespan(app: FastAPI):
     
     # Initialize Azure AD B2C authentication
     try:
-        from src.common.auth.azure_auth import init_azure_auth
+        from src.common.auth.dependencies import init_azure_auth
         await init_azure_auth(app)
         logger.info("Azure AD B2C authentication initialized")
     except Exception as e:
@@ -138,8 +138,18 @@ app = FastAPI(
     description="API for managing job postings, employers, and candidate interactions",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url=None,  # We'll create a custom docs endpoint
-    redoc_url=None,  # We'll create a custom redoc endpoint
+    docs_url="/docs",  # Enable docs with default URL
+    redoc_url="/redoc",  # Enable redoc with default URL
+    # Use built-in OAuth2 redirect handling from settings
+    swagger_ui_oauth2_redirect_url=settings.oauth2_redirect_path,
+    # Configure OAuth2 initialization directly
+    swagger_ui_init_oauth={
+        "usePkceWithAuthorizationCodeGrant": True,
+        "clientId": settings.effective_swagger_client_id,
+        "appName": "Cognitive Hire API Swagger UI",
+        "scopeSeparator": " ",
+        "scopes": settings.azure_ad_b2c_scopes
+    }
 )
 
 # Add development mode auth bypass info to description if in development
@@ -186,187 +196,6 @@ if static_dir.exists():
     oauth2_redirect_path = static_dir / "oauth2-redirect.html"
     if not oauth2_redirect_path.exists():
         logger.warning("OAuth2 redirect file not found at expected location", path=str(oauth2_redirect_path))
-
-# Custom OpenAPI to include security definitions
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    
-    openapi_schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=app.description,
-        routes=app.routes,
-    )
-    
-    # Ensure OpenAPI version is explicitly set
-    openapi_schema["openapi"] = "3.0.2"
-    
-    # Add security scheme
-    openapi_schema["components"] = openapi_schema.get("components", {})
-    openapi_schema["components"]["securitySchemes"] = {
-        "oauth2": {
-            "type": "oauth2",
-            "flows": {
-                "authorizationCode": {
-                    "authorizationUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
-                    "tokenUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
-                    "scopes": {
-                        "openid": "OpenID Connect authentication",
-                        settings.azure_ad_b2c_scope: "Access API"
-                    }
-                }
-            }
-        }
-    }
-    
-    # Add development auth bypass info if in development mode
-    if settings.ENVIRONMENT in ["development", "testing"]:
-        openapi_schema["components"]["securitySchemes"]["authBypass"] = {
-            "type": "apiKey",
-            "in": "header",
-            "name": "X-Auth-Bypass",
-            "description": f"Development authentication bypass token. Use value: '{settings.AUTH_BYPASS_TOKEN}'"
-        }
-        
-        # Allow either oauth2 OR authBypass (not both required)
-        openapi_schema["security"] = [
-            {"oauth2": ["openid", settings.azure_ad_b2c_scope]},
-            {"authBypass": []}  # Using OR relationship between security schemes
-        ]
-    else:
-        # In non-development environments, only use OAuth2
-        openapi_schema["security"] = [{"oauth2": ["openid", settings.azure_ad_b2c_scope]}]
-    
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-app.openapi = custom_openapi
-
-# Update Swagger UI configuration to avoid duplicate response_type parameters
-@app.get("/docs", include_in_schema=False)
-async def custom_swagger_ui_html():
-    """Serve Swagger UI with adjusted OAuth2 configuration for Azure AD B2C."""
-    return get_swagger_ui_html(
-        openapi_url=app.openapi_url,
-        title=f"{app.title} - Swagger UI",
-        oauth2_redirect_url=settings.SWAGGER_UI_OAUTH_REDIRECT_URL,
-        init_oauth={
-            "clientId": settings.SWAGGER_UI_CLIENT_ID,
-            "appName": "Cognitive Hire API Swagger UI",
-            "scopeSeparator": " ",
-            "usePkceWithAuthorizationCodeGrant": True,  # Enable PKCE
-            "additionalQueryStringParams": {
-                # Don't include response_type here, Swagger UI adds it automatically
-                "response_mode": settings.AZURE_AD_B2C_RESPONSE_MODE
-            }
-        },
-        swagger_js_url="https://unpkg.com/swagger-ui-dist@4.18.1/swagger-ui-bundle.js",
-        swagger_css_url="https://unpkg.com/swagger-ui-dist@4.18.1/swagger-ui.css"
-    )
-
-# Use a simple redirect handler
-@app.get("/docs/oauth2-redirect.html", include_in_schema=False)
-async def oauth2_redirect():
-    """Serve the standard OAuth2 redirect HTML."""
-    oauth2_redirect_path = Path(__file__).parent / "static" / "oauth2-redirect.html"
-    
-    headers = {
-        "Cache-Control": "no-store",
-        "Pragma": "no-cache"
-    }
-    
-    # If file exists, serve it
-    if oauth2_redirect_path.exists():
-        with open(oauth2_redirect_path, "r") as f:
-            content = f.read()
-        return Response(content=content, media_type="text/html", headers=headers)
-    
-    # Otherwise, use the embedded version
-    html_content = """
-<!doctype html>
-<html lang="en-US">
-<head>
-    <title>Swagger UI: OAuth2 Redirect</title>
-</head>
-<body>
-<script>
-    'use strict';
-    function run () {
-        var oauth2 = window.opener.swaggerUIRedirectOauth2;
-        var sentState = oauth2.state;
-        var redirectUrl = oauth2.redirectUrl;
-        var isValid, qp, arr;
-
-        if (/code|token|error/.test(window.location.hash)) {
-            qp = window.location.hash.substring(1);
-        } else {
-            qp = location.search.substring(1);
-        }
-
-        arr = qp.split("&");
-        arr.forEach(function (v,i,_arr) { _arr[i] = '"' + v.replace('=', '":"') + '"';});
-        qp = qp ? JSON.parse('{' + arr.join() + '}',
-                function (key, value) {
-                    return key === "" ? value : decodeURIComponent(value);
-                }
-        ) : {};
-
-        isValid = qp.state === sentState;
-
-        if (oauth2.auth.schema.get("flow") === "accessCode" ||
-            oauth2.auth.schema.get("flow") === "authorizationCode" ||
-            oauth2.auth.schema.get("flow") === "authorization_code") {
-            if (!isValid) {
-                oauth2.errCb({
-                    authId: oauth2.auth.name,
-                    source: "auth",
-                    level: "warning",
-                    message: "Authorization may be unsafe, passed state was changed in server. The passed state wasn't returned from auth server."
-                });
-            }
-
-            if (qp.code) {
-                delete oauth2.state;
-                oauth2.auth.code = qp.code;
-                oauth2.callback({auth: oauth2.auth, redirectUrl: redirectUrl});
-            } else {
-                let oauthErrorMsg;
-                if (qp.error) {
-                    oauthErrorMsg = "["+qp.error+"]: " +
-                        (qp.error_description ? qp.error_description+ ". " : "no accessCode received from the server. ") +
-                        (qp.error_uri ? "More info: "+qp.error_uri : "");
-                }
-
-                oauth2.errCb({
-                    authId: oauth2.auth.name,
-                    source: "auth",
-                    level: "error",
-                    message: oauthErrorMsg || "[Authorization failed]: no accessCode received from the server."
-                });
-            }
-        } else {
-            oauth2.callback({auth: oauth2.auth, token: qp, isValid: isValid, redirectUrl: redirectUrl});
-        }
-        
-        window.close();
-    }
-
-    window.addEventListener('DOMContentLoaded', function () {
-        run();
-    });
-</script>
-</body>
-</html>
-    """
-    return Response(content=html_content, media_type="text/html", headers=headers)
-
-@app.get("/redoc", include_in_schema=False)
-async def redoc_html():
-    return get_redoc_html(
-        openapi_url=app.openapi_url,
-        title=f"{app.title} - ReDoc",
-    )
 
 # Exception handlers
 @app.exception_handler(HTTPException)
@@ -451,6 +280,71 @@ async def auth_help_endpoint():
     from src.debug.token_debug import get_auth_help_info
     
     return get_auth_help_info()
+
+# Custom OpenAPI to include security definitions
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    # Ensure OpenAPI version is explicitly set
+    openapi_schema["openapi"] = "3.0.2"
+    
+    # Add security schemes
+    openapi_schema["components"] = openapi_schema.get("components", {})
+    openapi_schema["components"]["securitySchemes"] = {
+        "oauth2": {
+            "type": "oauth2",
+            "flows": {
+                "authorizationCode": {
+                    "authorizationUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
+                    "tokenUrl": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
+                    "scopes": {
+                        "openid": "OpenID Connect authentication",
+                        settings.azure_ad_b2c_scope: "Access API"
+                    }
+                }
+            }
+        },
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+        }
+    }
+    
+    # Add development auth bypass info if in development mode
+    if settings.ENVIRONMENT in ["development", "testing"]:
+        openapi_schema["components"]["securitySchemes"]["authBypass"] = {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Auth-Bypass",
+            "description": f"Development authentication bypass token. Use value: '{settings.AUTH_BYPASS_TOKEN}'"
+        }
+        
+        # Allow either oauth2 OR authBypass OR bearerAuth (not all required)
+        openapi_schema["security"] = [
+            {"oauth2": settings.azure_ad_b2c_scopes},
+            {"bearerAuth": []},
+            {"authBypass": []}
+        ]
+    else:
+        # In non-development environments, only use OAuth2 and Bearer
+        openapi_schema["security"] = [
+            {"oauth2": settings.azure_ad_b2c_scopes},
+            {"bearerAuth": []}
+        ]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 if __name__ == "__main__":
     import uvicorn

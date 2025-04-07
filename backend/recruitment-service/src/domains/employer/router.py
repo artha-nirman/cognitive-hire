@@ -5,7 +5,7 @@ from typing import List
 from src.common.db.database import get_db
 from src.domains.employer.models import EmployerCreate, EmployerRead, EmployerUpdate
 from src.domains.employer.service import EmployerService
-from src.common.auth.azure_auth import get_current_user
+from src.common.auth.dependencies import get_current_user
 
 router = APIRouter()
 

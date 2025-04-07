@@ -5,7 +5,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from jose import jwt, JWTError
 
 # Updated import - use auth module directly instead of middleware
-from src.common.auth.azure_auth import get_current_user
+from src.common.auth.dependencies import get_current_user
 from src.common.config import settings
 
 router = APIRouter()
