@@ -1,14 +1,15 @@
 import logging
 from contextlib import asynccontextmanager
 
-import structlog
+# Import our centralized logging configuration
+from src.common.logging import configure_logging, get_logger
+import structlog  # Add the missing import
 from fastapi import FastAPI, HTTPException, Request, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
-from fastapi.security import OAuth2AuthorizationCodeBearer
 from pathlib import Path
 import os
 from jose import jwt
@@ -21,40 +22,15 @@ from src.domains.job.router import router as job_router
 from src.domains.publishing.router import router as publishing_router
 from src.domains.screening.router import router as screening_router
 from src.domains.sourcing.router import router as sourcing_router
-# Removed middleware imports
 from src.common.websocket.handlers import handle_job_event, handle_screening_event, handle_sourcing_event
 from src.websocket.routes import router as websocket_router
+from src.common.middleware import request_logging_middleware
 
-# Configure structured logging
-logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL))
+# Configure logging using our centralized module
+configure_logging(settings.LOG_LEVEL, settings.LOG_FORMAT)
 
-# Define processors based on format
-processors = [
-    structlog.stdlib.filter_by_level,
-    structlog.stdlib.add_logger_name,
-    structlog.stdlib.add_log_level,
-    structlog.stdlib.PositionalArgumentsFormatter(),
-    structlog.processors.TimeStamper(fmt="iso"),
-    structlog.processors.StackInfoRenderer(),
-    structlog.processors.format_exc_info,
-    structlog.processors.UnicodeDecoder(),
-]
-
-# Add the renderer based on configuration
-if settings.LOG_FORMAT.lower() == "json":
-    processors.append(structlog.processors.JSONRenderer())
-else:
-    processors.append(structlog.dev.ConsoleRenderer())
-
-structlog.configure(
-    processors=processors,
-    context_class=dict,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-logger = structlog.get_logger(__name__)
+# Get a logger for this module
+logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -97,15 +73,6 @@ async def lifespan(app: FastAPI):
         logger.error("Event system initialization failed", exc_info=e)
         raise
     
-    # Initialize Azure AD B2C authentication
-    try:
-        from src.common.auth.dependencies import init_azure_auth
-        await init_azure_auth(app)
-        logger.info("Azure AD B2C authentication initialized")
-    except Exception as e:
-        logger.error("Azure AD B2C initialization failed", exc_info=e)
-        raise
-    
     logger.info("Application started successfully")
     
     yield
@@ -120,16 +87,6 @@ async def lifespan(app: FastAPI):
         logger.error("Error during event system shutdown", exc_info=e)
     
     logger.info("Application shutdown complete")
-
-# Define OAuth2 scheme for Swagger UI
-oauth2_scheme = OAuth2AuthorizationCodeBearer(
-    authorizationUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
-    tokenUrl=f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
-    scopes={
-        "openid": "OpenID Connect authentication",
-        settings.azure_ad_b2c_scope: "Access API"
-    }
-)
 
 # Create FastAPI application
 app = FastAPI(
@@ -150,6 +107,11 @@ app = FastAPI(
         "scopes": settings.azure_ad_b2c_scopes
     }
 )
+
+# Remove the request logging middleware (since it was just for debugging)
+# @app.middleware("http")
+# async def log_requests(request: Request, call_next):
+#     return await request_logging_middleware(request, call_next)
 
 # Add development mode auth bypass info to description if in development
 if settings.ENVIRONMENT in ["development", "testing"]:
@@ -229,13 +191,9 @@ async def token_info(request: Request):
         raise HTTPException(status_code=404, detail="Not found")
     
     from src.debug.token_debug import get_auth_debug_info
-    
-    # Get detailed token debugging info
-    debug_info = get_auth_debug_info(request)
-    
-    return debug_info
+    return get_auth_debug_info(request)
 
-# Add an auth test endpoint for development
+
 @app.get("/debug/auth-test", include_in_schema=False)
 async def auth_test(request: Request):
     """
@@ -245,7 +203,6 @@ async def auth_test(request: Request):
     if settings.ENVIRONMENT != "development":
         raise HTTPException(status_code=404, detail="Not found")
         
-    # Should only reach here if authentication succeeded
     return {
         "authenticated": True,
         "user": request.state.user if hasattr(request.state, "user") else None,
@@ -266,6 +223,39 @@ async def auth_help_endpoint():
     from src.debug.token_debug import get_auth_help_info
     
     return get_auth_help_info()
+
+# Add a logging debug endpoint
+@app.get("/debug/logging-test", include_in_schema=False)
+async def debug_logging_test():
+    """
+    Debug endpoint to test different logging methods.
+    Only available in development mode.
+    """
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    from src.debug.token_debug import get_logging_debug_info, test_logging_methods
+    
+    # Run the logging tests
+    test_results = test_logging_methods()
+    
+    # Get logging config info
+    logging_info = get_logging_debug_info()
+    
+    # Add some direct logging from this endpoint
+    py_logger = logging.getLogger("src.main")
+    py_logger.info("Direct Python logger INFO from debug endpoint")
+    
+    struct_logger = structlog.get_logger("src.main")
+    struct_logger.info("Structlog INFO from debug endpoint")
+    
+    print("[DEBUG] Direct print from debug endpoint")
+    
+    return {
+        "test_results": test_results,
+        "logging_info": logging_info,
+        "note": "Check your console for logged messages"
+    }
 
 # Custom OpenAPI to include security definitions
 def custom_openapi():

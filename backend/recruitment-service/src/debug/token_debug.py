@@ -1,81 +1,94 @@
 import base64
 import json
-from fastapi import Request
+import logging
+import datetime
+from fastapi import Request, HTTPException
 import structlog
 from typing import Dict, Any, Optional
-from jose import jwt
 
 from src.common.config import settings
 
 logger = structlog.get_logger(__name__)
 
+def decode_jwt_without_verification(token: str) -> Dict[str, Any]:
+    """
+    Decode JWT token without signature verification.
+    
+    This is only used for debugging. In production, tokens should always be
+    fully verified before being trusted.
+    
+    Args:
+        token: JWT token string
+        
+    Returns:
+        Dictionary with token header and payload
+    """
+    parts = token.split('.')
+    if len(parts) != 3:
+        return {"error": "Invalid token format"}
+    
+    try:
+        # Decode header
+        header_part = parts[0]
+        header_padded = header_part + '=' * (4 - len(header_part) % 4)
+        header_bytes = base64.b64decode(header_padded.replace('-', '+').replace('_', '/'))
+        header = json.loads(header_bytes.decode('utf-8'))
+        
+        # Decode payload
+        payload_part = parts[1]
+        payload_padded = payload_part + '=' * (4 - len(payload_part) % 4)
+        payload_bytes = base64.b64decode(payload_padded.replace('-', '+').replace('_', '/'))
+        payload = json.loads(payload_bytes.decode('utf-8'))
+        
+        return {
+            "header": header,
+            "payload": payload,
+            "raw": {
+                "header": header_part,
+                "payload": payload_part,
+                "signature": parts[2]
+            }
+        }
+    except Exception as e:
+        return {"error": f"Failed to decode token: {str(e)}"}
+
 def get_auth_debug_info(request: Request) -> Dict[str, Any]:
     """
-    Get detailed authentication debug information from a request.
+    Get detailed debug information about authentication.
     
     Args:
         request: The HTTP request
         
     Returns:
-        Dict with authentication debug information
+        Dictionary with auth debug information
     """
-    auth_header = request.headers.get("Authorization")
+    auth_header = request.headers.get("Authorization", "")
+    auth_bypass = request.headers.get("X-Auth-Bypass")
+    token = None
+    
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    
     debug_info = {
-        "has_auth_header": auth_header is not None,
-        "header_starts_with_bearer": auth_header and auth_header.startswith("Bearer ") or False,
-        "auth_settings": {
-            "tenant": settings.AZURE_AD_B2C_TENANT_NAME,
-            "client_id": settings.AZURE_AD_B2C_CLIENT_ID,
-            "policy": settings.AZURE_AD_B2C_SIGNIN_POLICY,
-            "bypass_enabled": settings.AUTH_BYPASS_ENABLED,
-        },
-        "token_info": None,
-        "decoded_payload": None,
-        "decoded_header": None,
-        "bypass_info": {
-            "has_bypass_header": request.headers.get("X-Auth-Bypass") is not None,
-            "bypass_token_valid": request.headers.get("X-Auth-Bypass") == settings.AUTH_BYPASS_TOKEN,
-            "has_tenant_header": request.headers.get("X-Test-Tenant-ID") is not None,
+        "auth_header_present": bool(auth_header),
+        "auth_bypass_present": bool(auth_bypass),
+        "auth_bypass_enabled": settings.AUTH_BYPASS_ENABLED,
+        "token_present": bool(token),
+        "environment": settings.ENVIRONMENT,
+        "settings": {
+            "environment": settings.ENVIRONMENT,
+            "auth_bypass_enabled": settings.AUTH_BYPASS_ENABLED,
+            "azure_ad_b2c_tenant": settings.AZURE_AD_B2C_TENANT_NAME,
+            "azure_ad_b2c_policy": settings.AZURE_AD_B2C_SIGNIN_POLICY,
+            "azure_ad_b2c_scope": settings.azure_ad_b2c_scope,
+            "redirect_url": settings.oauth2_redirect_url
         }
     }
     
-    # Add authentication URLs
-    debug_info["auth_urls"] = {
-        "authority": settings.authority_url,
-        "openid_config": settings.openid_config_url,
-        "expected_scope": settings.azure_ad_b2c_scope
-    }
-    
-    # Only try to decode the token in the Authorization header if it exists
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.replace("Bearer ", "")
+    if token:
+        decoded_token = decode_jwt_without_verification(token)
+        debug_info["token_info"] = decoded_token
         
-        # Add token segments info
-        segments = token.split(".")
-        debug_info["token_info"] = {
-            "segment_count": len(segments),
-            "is_jwt_format": len(segments) == 3,
-            "length": len(token)
-        }
-        
-        # Try to decode the token parts without validation
-        try:
-            # JWT has three parts: header.payload.signature
-            if len(segments) >= 2:
-                # Decode header (first segment)
-                header_json = base64_decode_segment(segments[0])
-                debug_info["decoded_header"] = json.loads(header_json) if header_json else None
-                
-                # Decode payload (second segment)
-                payload_json = base64_decode_segment(segments[1])
-                debug_info["decoded_payload"] = json.loads(payload_json) if payload_json else None
-                
-                # Extract key claims for easier viewing
-                if debug_info["decoded_payload"]:
-                    debug_info["key_claims"] = extract_key_claims(debug_info["decoded_payload"])
-        except Exception as e:
-            debug_info["decode_error"] = str(e)
-    
     return debug_info
 
 def extract_key_claims(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -144,95 +157,129 @@ def base64_decode_segment(segment: str) -> Optional[str]:
 
 def get_auth_help_info() -> Dict[str, Any]:
     """
-    Get authentication help information for developers.
+    Get help information about authentication configuration.
     
     Returns:
-        Dict with authentication help information
+        Dictionary with authentication help information
     """
-    # Authorization code flow URL construction
-    redirect_uri = "http://localhost:8000/docs/oauth2-redirect.html"
-    
-    auth_url = (
-        f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/"
-        f"{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/"
-        f"{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize"
-        f"?client_id={settings.AZURE_AD_B2C_CLIENT_ID}"
-        f"&response_type=code"
-        f"&redirect_uri={redirect_uri}"
-        f"&response_mode={settings.AZURE_AD_B2C_RESPONSE_MODE}"
-        f"&scope=openid%20{settings.azure_ad_b2c_scope}"
-    )
-    
-    token_url = (
-        f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/"
-        f"{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/"
-        f"{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token"
-    )
-    
-    help_info = {
-        "authorization_methods": [
-            {
-                "name": "Azure AD B2C OAuth 2.0",
-                "description": "Use the Azure AD B2C configured for this application",
-                "urls": {
-                    "authorization_endpoint": auth_url,
-                    "token_endpoint": token_url,
-                    "redirect_uri": redirect_uri,
-                    "openid_configuration": settings.openid_config_url,
-                },
-                "required_parameters": {
+    return {
+        "authentication_methods": {
+            "oauth2": {
+                "swagger_authorize": {
                     "client_id": settings.AZURE_AD_B2C_CLIENT_ID,
-                    "response_type": "code",
-                    "redirect_uri": redirect_uri,
-                    "scope": f"openid {settings.azure_ad_b2c_scope}",
-                    "response_mode": settings.AZURE_AD_B2C_RESPONSE_MODE,
+                    "auth_url": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/authorize",
+                    "token_url": f"https://{settings.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/{settings.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/{settings.AZURE_AD_B2C_SIGNIN_POLICY}/oauth2/v2.0/token",
+                    "scope": settings.azure_ad_b2c_scope
                 }
             },
-            {
-                "name": "Development Auth Bypass",
-                "description": "Use the development authentication bypass mechanism (for development only)",
-                "available": settings.AUTH_BYPASS_ENABLED and settings.ENVIRONMENT in ["development", "testing"],
-                "usage": {
-                    "header": "X-Auth-Bypass",
-                    "value": settings.AUTH_BYPASS_TOKEN,
-                    "optional_tenant_header": "X-Test-Tenant-ID",
-                    "optional_tenant_value": "Any valid tenant ID for testing"
-                }
+            "bearer_token": {
+                "header": "Authorization: Bearer YOUR_TOKEN",
+                "format": "JWT"
+            },
+            "auth_bypass": {
+                "enabled": settings.AUTH_BYPASS_ENABLED,
+                "environment": settings.ENVIRONMENT,
+                "header": "X-Auth-Bypass",
+                "token": settings.AUTH_BYPASS_TOKEN if settings.AUTH_BYPASS_ENABLED and settings.ENVIRONMENT in ["development", "testing"] else "hidden",
+                "example": f'curl -H "X-Auth-Bypass: {settings.AUTH_BYPASS_TOKEN}" http://localhost:8000/api/employer/'
             }
-        ],
-        "swagger_ui_config": {
-            "client_id": settings.SWAGGER_UI_CLIENT_ID,
-            "client_name": "Swagger UI",
-            "redirect_url": settings.SWAGGER_UI_OAUTH_REDIRECT_URL,
-            "pkce_enabled": True,
-            "scopes": ["openid", settings.azure_ad_b2c_scope],
         },
         "troubleshooting": {
+            "debug_endpoints": {
+                "token_info": "/debug/token-info",
+                "auth_test": "/debug/auth-test"
+            },
             "common_issues": [
-                {
-                    "problem": "Token validation fails with 'Invalid audience'",
-                    "solution": "Ensure your token's 'aud' claim matches the client_id"
-                },
-                {
-                    "problem": "Missing required scope",
-                    "solution": f"Ensure your token contains the scope '{settings.azure_ad_b2c_scope}'"
-                },
-                {
-                    "problem": "PKCE validation fails",
-                    "solution": "Use a PKCE-capable client and ensure code_verifier is properly passed when exchanging the code"
-                }
-            ],
-            "debug_endpoints": [
-                {
-                    "url": "/debug/token-info",
-                    "description": "Get detailed information about your authentication token"
-                },
-                {
-                    "url": "/debug/auth-test",
-                    "description": "Test if your authentication is working correctly"
-                }
+                "Swagger UI: Make sure the client ID matches the Azure B2C app registration",
+                "Auth Bypass: Verify X-Auth-Bypass header contains exact token from settings",
+                "Bearer Token: Ensure token is not expired and has required scopes",
+                "Azure B2C: Verify Azure settings match your B2C tenant configuration",
+                "Scope: Ensure the app has permission to access the required scope"
             ]
         }
     }
+
+def get_logging_debug_info() -> Dict[str, Any]:
+    """
+    Get information about logging configuration to help diagnose missing logs.
     
-    return help_info
+    Returns:
+        Dictionary with logging configuration information
+    """
+    # Get Python logging configuration
+    root_logger = logging.getLogger()
+    auth_logger = logging.getLogger('src.common.auth')
+    auth_deps_logger = logging.getLogger('src.common.auth.dependencies')
+    employer_router_logger = logging.getLogger('src.domains.employer.router')
+    
+    # Check if loggers have handlers attached
+    def get_logger_handlers(logger):
+        handlers = []
+        for handler in logger.handlers:
+            handlers.append({
+                "type": handler.__class__.__name__,
+                "level": logging.getLevelName(handler.level),
+                "formatter": handler.formatter.__class__.__name__ if hasattr(handler, "formatter") else None
+            })
+        return handlers
+    
+    # Get structlog configuration
+    config = structlog.get_config()
+    structlog_config = {
+        "processors": [
+            # Fix: Safely get processor name
+            getattr(p, "__module__", str(p.__class__)) + "." + getattr(p, "__name__", p.__class__.__name__)
+            for p in config.get("processors", [])
+        ]
+    }
+    
+    return {
+        "python_logging": {
+            "root_level": root_logger.level,
+            "root_level_name": logging.getLevelName(root_logger.level),
+            "handlers": get_logger_handlers(root_logger),
+            "auth_level": auth_logger.level,
+            "auth_level_name": logging.getLevelName(auth_logger.level),
+            "auth_deps_level": auth_deps_logger.level,
+            "auth_deps_level_name": logging.getLevelName(auth_deps_logger.level),
+            "employer_router_level": employer_router_logger.level,
+            "employer_router_level_name": logging.getLevelName(employer_router_logger.level),
+            "auth_logger_propagate": auth_logger.propagate,
+            "auth_deps_logger_propagate": auth_deps_logger.propagate,
+            "employer_router_logger_propagate": employer_router_logger.propagate,
+            "employer_router_handlers": get_logger_handlers(employer_router_logger),
+        },
+        "structlog_config": structlog_config,
+        "app_config": {
+            "environment": settings.ENVIRONMENT,
+            "log_level": settings.LOG_LEVEL,
+            "log_format": settings.LOG_FORMAT
+        },
+        "active_loggers": {
+            name: logging.getLevelName(logging.getLogger(name).level)
+            for name in logging.root.manager.loggerDict
+            if "auth" in name.lower() or "employer" in name.lower() or "router" in name.lower()
+        }
+    }
+
+def test_logging_methods():
+    """Test different logging methods to find which ones work."""
+    logger = structlog.get_logger(__name__)
+    py_logger = logging.getLogger(__name__)
+    
+    # Test different logging methods
+    print("[DEBUG-PRINT] Direct print test")
+    
+    py_logger.debug("Python logger DEBUG test")
+    py_logger.info("Python logger INFO test")
+    py_logger.warning("Python logger WARNING test")
+    
+    logger.debug("Structlog DEBUG test")
+    logger.info("Structlog INFO test")
+    logger.warning("Structlog WARNING test")
+    
+    return {
+        "tests_executed": True,
+        "methods_tested": ["print", "logging.debug/info/warning", "structlog.debug/info/warning"],
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }

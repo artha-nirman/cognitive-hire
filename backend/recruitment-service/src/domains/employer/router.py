@@ -1,11 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from typing import List, Optional
+
+# Use the centralized logging configuration
+from src.common.logging import get_logger
 
 from src.common.db.database import get_db
 from src.domains.employer.models import EmployerCreate, EmployerRead, EmployerUpdate
 from src.domains.employer.service import EmployerService
 from src.common.auth.dependencies import get_current_user
+from src.common.config import settings
+
+# Get a logger for this module
+logger = get_logger(__name__)
 
 router = APIRouter()
 
@@ -43,8 +50,12 @@ async def list_employers(
     db: AsyncSession = Depends(get_db)
 ):
     """List employers with pagination."""
+    logger.info("Listing employers", skip=skip, limit=limit)
+    
     service = EmployerService(db)
-    return await service.list_employers(skip=skip, limit=limit)
+    employers = await service.list_employers(skip=skip, limit=limit)
+    
+    return employers
 
 
 @router.put("/{employer_id}", response_model=EmployerRead)

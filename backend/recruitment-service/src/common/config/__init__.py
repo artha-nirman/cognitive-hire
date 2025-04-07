@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Application settings
     APP_NAME: str = "recruitment-service"
     ENVIRONMENT: str = "development"  # development, testing, production
-    LOG_LEVEL: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+    LOG_LEVEL: str = "DEBUG"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
     LOG_FORMAT: str = "json"  # json or console
     
     # Security
