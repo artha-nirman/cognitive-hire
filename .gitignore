@@ -1,12 +1,8 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -135,6 +131,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+venv*/
 
 # Spyder project settings
 .spyderproject
@@ -165,10 +162,78 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
 
 # Ruff stuff:
 .ruff_cache/
 
 # PyPI configuration file
 .pypirc
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+*~
+.vs/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Local configuration files
+*.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.secret
+config.local.yaml
+
+# Frontend
+node_modules/
+.next/
+out/
+.cache/
+.nuxt/
+.parcel-cache/
+
+# Database
+*.sqlite3
+*.db
+
+# Docker
+.docker/*
+
+# Temporary files
+tmp/
+.tmp/
+temp/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Azure Functions
+local.settings.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars.json
+crash.log
+
+# Security
+credentials.json
+key.json
+*.pem
+*.key
+*.cert
+
+# Specific to your project
+cognitive-hire/backend/security-service/venv*/
