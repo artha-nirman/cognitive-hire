@@ -1,0 +1,40 @@
+# FastAPI core
+fastapi==0.103.1
+uvicorn[standard]==0.23.2
+# Using older pydantic version that's compatible with Python 3.13
+pydantic==1.10.13
+pydantic-settings==0.2.0
+email-validator==2.0.0
+
+# FastAPI extras
+fastapi-azure-auth==4.2.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.20
+alembic==1.12.0
+# Using MySQL connector instead of PostgreSQL due to compilation issues
+pymysql==1.1.0
+sqlalchemy-utils==0.41.1
+
+# Authentication
+python-jose[cryptography]==3.3.0
+PyJWT==2.8.0  # Added PyJWT package explicitly
+passlib[bcrypt]==1.7.4
+
+# Logging & observability
+opentelemetry-api==1.19.0
+opentelemetry-sdk==1.19.0
+opentelemetry-exporter-otlp==1.19.0
+opentelemetry-instrumentation-fastapi==0.40b0
+python-json-logger==2.0.7
+
+# Testing
+pytest==7.4.2
+pytest-asyncio==0.21.1
+httpx==0.24.1
+pytest-cov==4.1.0
+
+# Utilities
+python-dotenv==1.0.0
+tenacity==8.2.3
