@@ -193,8 +193,8 @@ class AuthService:
             if prompt:
                 params["prompt"] = prompt
                 
-            # Build the complete URL
-            query_string = "&".join([f"{k}={requests.utils.quote(v)}" for k, v in params.items()])
+            # Ensure all parameter values are strings
+            query_string = "&".join([f"{k}={requests.utils.quote(str(v))}" for k, v in params.items()])
             auth_url = f"{auth_endpoint}?{query_string}"
 
             logger.debug(f"OAuth authorization URL: {auth_url}", extra={"event": "oauth_url_generated"})

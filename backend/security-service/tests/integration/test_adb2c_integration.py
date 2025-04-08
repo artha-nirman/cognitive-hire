@@ -1,6 +1,7 @@
 import os
 import pytest
 import requests
+import logging
 from urllib.parse import urlparse, parse_qs
 from fastapi.testclient import TestClient
 from app.main import app
@@ -15,10 +16,14 @@ pytestmark = pytest.mark.skipif(
 # Test client
 client = TestClient(app)
 
+# Configure logger
+logger = logging.getLogger("test_logger")
+logging.basicConfig(level=logging.INFO)
+
 def test_oauth_login_generates_valid_url():
     """Test that the OAuth login endpoint generates a valid Azure AD B2C authorization URL"""
     request_data = {
-        "redirect_uri": "http://localhost:3000/auth/callback",
+        "redirect_uri": "http://localhost:8000/docs/oauth2-redirect",
         "state": "test_state"
     }
     
@@ -27,6 +32,9 @@ def test_oauth_login_generates_valid_url():
     assert response.status_code == 200
     result = response.json()
     assert "authorization_url" in result
+    
+    # Log the authorization URL
+    logger.info(f"Generated Authorization URL: {result['authorization_url']}")
     
     # Parse URL to verify it has the correct structure
     url = urlparse(result["authorization_url"])
