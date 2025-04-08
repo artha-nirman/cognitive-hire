@@ -3,6 +3,8 @@ from fastapi import Depends, HTTPException
 from datetime import datetime, timedelta
 import uuid
 from jose import jwt  # Use jose.jwt instead of importing jwt directly
+from app.schemas.oauth import OAuthConfig
+import requests
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -155,3 +157,49 @@ class AuthService:
         )
         
         return token
+
+    async def generate_oauth_authorization_url(
+        self, 
+        redirect_uri: str, 
+        state: Optional[str] = None, 
+        prompt: Optional[str] = None
+    ) -> str:
+        """Generate an authorization URL for Azure AD B2C login"""
+        logger.info("Generating OAuth authorization URL", extra={"event": "generate_oauth_url"})
+        
+        try:
+            # Create OAuth config from settings
+            oauth_config = OAuthConfig(
+                tenant_id=settings.AZURE_AD_B2C_TENANT_ID,
+                client_id=settings.AZURE_AD_B2C_CLIENT_ID,
+                client_secret=settings.AZURE_AD_B2C_CLIENT_SECRET,
+                policy_name=settings.AZURE_AD_B2C_POLICY_NAME
+            )
+            
+            # Get authorization endpoint from config
+            auth_endpoint = oauth_config.get_authorization_endpoint()
+            
+            # Build query parameters
+            params = {
+                "client_id": oauth_config.client_id,
+                "redirect_uri": redirect_uri,
+                "response_type": "code",
+                "scope": oauth_config.scope
+            }
+            
+            # Add optional parameters
+            if state:
+                params["state"] = state
+            if prompt:
+                params["prompt"] = prompt
+                
+            # Build the complete URL
+            query_string = "&".join([f"{k}={requests.utils.quote(v)}" for k, v in params.items()])
+            auth_url = f"{auth_endpoint}?{query_string}"
+
+            logger.debug(f"OAuth authorization URL: {auth_url}", extra={"event": "oauth_url_generated"})
+            return auth_url
+
+        except Exception as e:
+            logger.error(f"Error generating OAuth URL: {str(e)}", extra={"event": "generate_oauth_url_error"})
+            raise

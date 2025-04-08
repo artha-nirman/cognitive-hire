@@ -1,0 +1,43 @@
+# Integration test job that runs against a real test AD B2C tenant
+integration-test:
+  needs: unit-test
+  if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+  runs-on: ubuntu-latest
+  environment: test
+  
+  services:
+    postgres:
+      image: postgres:13
+      env:
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_USER: postgres
+        POSTGRES_DB: security_service_test
+      ports:
+        - 5432:5432
+      options: >-
+        --health-cmd pg_isready
+        --health-interval 10s
+        --health-timeout 5s
+        --health-retries 5
+          
+  steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        cd backend/security-service
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+    - name: Run integration tests
+      env:
+        RUN_INTEGRATION_TESTS: 'true'
+        AZURE_AD_B2C_TENANT_ID: ${{ secrets.TEST_TENANT_ID }}
+        AZURE_AD_B2C_CLIENT_ID: ${{ secrets.TEST_CLIENT_ID }}
+        AZURE_AD_B2C_CLIENT_SECRET: ${{ secrets.TEST_CLIENT_SECRET }}
+      run: |
+        cd backend/security-service
+        pytest tests/integration/ -v

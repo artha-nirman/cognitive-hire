@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from typing import Optional
-from app.schemas.auth import TokenResponse, LoginRequest, RegisterRequest
+from app.schemas.auth import TokenResponse, LoginRequest, RegisterRequest, OAuthLoginRequest, OAuthLoginResponse
 from app.core.logging import logger
 from app.core.config import settings
 from app.services.auth_service import AuthService
@@ -135,3 +135,32 @@ async def get_current_user(
             extra={"event": "get_current_user_failure", "error": str(e)}
         )
         raise HTTPException(status_code=401, detail="Invalid token")
+
+@router.post("/oauth/login", response_model=OAuthLoginResponse)
+async def oauth_login(
+    request: OAuthLoginRequest,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """
+    Initiate OAuth login flow with Azure AD B2C
+    Returns an authorization URL for redirecting the user
+    """
+    logger.info("OAuth login flow initiated", extra={"event": "oauth_login_initiated"})
+    
+    try:
+        # Generate authorization URL for Azure AD B2C
+        auth_url = await auth_service.generate_oauth_authorization_url(
+            redirect_uri=request.redirect_uri,
+            state=request.state,
+            prompt=request.prompt
+        )
+        
+        logger.info("OAuth authorization URL generated", extra={"event": "oauth_auth_url_generated"})
+        return OAuthLoginResponse(authorization_url=auth_url)
+        
+    except Exception as e:
+        logger.error(
+            f"Failed to generate OAuth authorization URL: {str(e)}", 
+            extra={"event": "oauth_auth_url_error"}
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to generate authorization URL: {str(e)}")
