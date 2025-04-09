@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ...existing code... -->
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <!-- Inject environment variables for browser access -->
+  <script>
+    window.__ENV__ = {
+      REACT_APP_AZURE_CLIENT_ID: "%REACT_APP_AZURE_CLIENT_ID%",
+      REACT_APP_AZURE_AUTHORITY: "%REACT_APP_AZURE_AUTHORITY%"
+    };
+  </script>
+  <!-- ...existing code... -->
+</body>
+</html>

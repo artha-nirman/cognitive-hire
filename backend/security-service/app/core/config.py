@@ -1,7 +1,14 @@
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 import os
+from dotenv import load_dotenv
 
+# Dynamically load the correct .env file based on the ENVIRONMENT variable
+environment = os.getenv("ENVIRONMENT", "development")
+if environment == "test":
+    load_dotenv(".env.test-integration")
+else:
+    load_dotenv(".env")
 
 class Settings(BaseSettings):
     # General settings
@@ -44,7 +51,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
-
 
 # Create settings instance
 settings = Settings()
