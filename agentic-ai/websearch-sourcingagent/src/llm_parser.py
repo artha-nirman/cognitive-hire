@@ -1,9 +1,13 @@
 import os
 import json
+import logging
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Union
 import requests
 import re
+
+# Set up logger for this module
+logger = logging.getLogger('sourcing_agent.llm_parser')
 
 # LLM base class for implementing different LLM providers
 class BaseLLM(ABC):
@@ -118,30 +122,28 @@ class OllamaLLM(BaseLLM):
         try:
             self._test_connection()
             self.server_available = True
-            print(f"Successfully connected to Ollama API at {self.api_url}")
+            logger.info(f"Successfully connected to Ollama API at {self.api_url}")
             
             # Check if the model is available
             self._check_model_availability()
             
         except Exception as e:
-            print(f"\n====== OLLAMA SERVER ERROR ======")
-            print(f"Could not connect to Ollama API at {self.api_url}: {str(e)}")
-            print(f"Please make sure the Ollama server is running. You can start it by:")
-            print(f"1. Opening a command prompt/terminal")
-            print(f"2. Running the command: ollama serve")
-            print(f"3. Wait for the server to start")
-            print(f"Alternatively, you can use a different LLM by setting the --llm parameter")
-            print(f"====== OLLAMA SERVER ERROR ======\n")
+            logger.error(f"Could not connect to Ollama API at {self.api_url}: {str(e)}")
+            logger.error("Please make sure the Ollama server is running. You can start it by:")
+            logger.error("1. Opening a command prompt/terminal")
+            logger.error("2. Running the command: ollama serve")
+            logger.error("3. Wait for the server to start")
+            logger.error("Alternatively, you can use a different LLM by setting the --llm parameter")
     
     def _test_connection(self):
         """Test the connection to the Ollama API"""
         try:
             response = requests.get(f"{self.api_url}/api/version", timeout=5)
             response.raise_for_status()
-            print(f"Ollama version: {response.json()}")
+            logger.info(f"Ollama version: {response.json()}")
             return response.json()
         except requests.RequestException as e:
-            print(f"ERROR in _test_connection: {str(e)}")
+            logger.error(f"ERROR in _test_connection: {str(e)}")
             raise ConnectionError(f"Failed to connect to Ollama server: {str(e)}")
     
     def _check_model_availability(self):
@@ -162,15 +164,15 @@ class OllamaLLM(BaseLLM):
                         break
             
             if not model_available:
-                print(f"Warning: Model '{self.model_name}' may not be available. Available models are:")
+                logger.warning(f"Model '{self.model_name}' may not be available. Available models are:")
                 if "models" in models:
                     for model in models["models"]:
-                        print(f"  - {model['name']}")
+                        logger.warning(f"  - {model['name']}")
                 else:
-                    print("  No models found")
-                print(f"You may need to pull the model first using 'ollama pull {self.model_name}'")
+                    logger.warning("  No models found")
+                logger.warning(f"You may need to pull the model first using 'ollama pull {self.model_name}'")
         except Exception as e:
-            print(f"Warning: Could not check model availability: {str(e)}")
+            logger.warning(f"Could not check model availability: {str(e)}")
     
     def _truncate_content(self, content: str, max_tokens: int = 1600) -> str:
         """
@@ -263,21 +265,21 @@ class OllamaLLM(BaseLLM):
                 "system": "You are an expert AI assistant that helps extract structured information from text content about job candidates. You must ONLY respond with a valid JSON object, with no explanations or additional text. Do not use markdown code blocks. The entire response must be a valid JSON object that can be parsed directly."
             }
             
-            # Print minimal debug information
-            print(f"Sending request to Ollama API with {len(truncated_content)} chars of content")
+            # Log minimal debug information
+            logger.debug(f"Sending request to Ollama API with {len(truncated_content)} chars of content")
             
             # Use a shorter timeout for first attempt
             try:
                 response = requests.post(self.generate_endpoint, json=payload, timeout=60)
                 response.raise_for_status()
             except requests.exceptions.Timeout:
-                print("First attempt timed out after 60s, retrying with smaller context...")
+                logger.warning("First attempt timed out after 60s, retrying with smaller context...")
                 # Reduce context further on timeout
                 payload["options"]["num_ctx"] = 2048
                 truncated_content = self._truncate_content(content, max_tokens=1500)
                 prompt = self.generate_extraction_prompt(truncated_content, keywords, max_content_tokens=1500)
                 payload["prompt"] = prompt
-                print(f"Retrying with reduced context: {len(truncated_content)} chars")
+                logger.debug(f"Retrying with reduced context: {len(truncated_content)} chars")
                 response = requests.post(self.generate_endpoint, json=payload, timeout=180)
                 response.raise_for_status()
             
@@ -296,33 +298,126 @@ class OllamaLLM(BaseLLM):
                     "raw_response": result_text[:200] + "..." if len(result_text) > 200 else result_text
                 }
         except requests.exceptions.HTTPError as http_err:
-            print(f"ERROR in parse_candidate_data: HTTP Error with Ollama API: {http_err}")
-            print(f"Response: {http_err.response.text if hasattr(http_err, 'response') else 'No response text'}")
+            logger.error(f"HTTP Error with Ollama API: {http_err}")
+            logger.error(f"Response: {http_err.response.text if hasattr(http_err, 'response') else 'No response text'}")
             return {
                 "error": f"HTTP Error with Ollama API: {http_err}",
                 "raw_response": ""
             }
         except requests.exceptions.ConnectionError as conn_err:
-            print(f"ERROR in parse_candidate_data: Connection Error with Ollama API: {conn_err}")
+            logger.error(f"Connection Error with Ollama API: {conn_err}")
             return {
                 "error": f"Connection Error with Ollama API: {conn_err}",
                 "raw_response": ""
             }
         except requests.exceptions.Timeout as timeout_err:
-            print(f"ERROR in parse_candidate_data: Ollama API timeout after 180 seconds: {timeout_err}")
-            print("Consider using a smaller model, reducing context size, or using a cloud-based LLM")
+            logger.error(f"Ollama API timeout after 180 seconds: {timeout_err}")
+            logger.error("Consider using a smaller model, reducing context size, or using a cloud-based LLM")
             return {
                 "error": "Ollama API timeout - model inference is taking too long",
                 "raw_response": ""
             }
         except Exception as e:
-            print(f"ERROR in parse_candidate_data: Error with Ollama API request: {str(e)}")
+            logger.error(f"Error with Ollama API request: {str(e)}")
             return {
                 "error": f"Error with Ollama API: {str(e)}",
                 "raw_response": ""
             }
 
-# Implementation for Anthropic Claude
+# Implementation for OpenAI GPT
+class OpenAILLM(BaseLLM):
+    def __init__(self, api_key: str, **kwargs):
+        """
+        Initialize the OpenAI GPT LLM without using the OpenAI library
+        
+        Args:
+            api_key: OpenAI API key
+            **kwargs: Additional arguments (ignored for compatibility)
+        """
+        self.api_key = api_key
+        self.api_url = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4-turbo")
+        
+        # Headers for OpenAI API requests
+        self.headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+        
+        # Log any ignored parameters for debugging
+        ignored_params = [k for k in kwargs.keys() if k not in ['api_key']]
+        if ignored_params:
+            logger.warning(f"The following parameters were ignored by the OpenAILLM: {', '.join(ignored_params)}")
+            
+        logger.info(f"Initialized OpenAI API client with model: {self.model}")
+    
+    def parse_candidate_data(self, content: str, keywords: Dict[str, List[str]]) -> Dict:
+        """
+        Parse content using OpenAI GPT API to extract candidate information
+        
+        Args:
+            content: The text content to parse
+            keywords: Dictionary containing must-have, should-have keywords
+            
+        Returns:
+            Dictionary with extracted candidate information
+        """
+        # Use the common prompt generator with GPT-4's token limit
+        prompt = self.generate_extraction_prompt(content, keywords, max_content_tokens=8000)
+        
+        try:
+            # Build request payload for OpenAI API
+            payload = {
+                "model": self.model,
+                "temperature": 0.1,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": "You are an expert AI assistant that helps extract structured information from text content about job candidates. Always respond with a valid JSON object."},
+                    {"role": "user", "content": prompt}
+                ]
+            }
+            
+            # Make direct API request
+            response = requests.post(
+                self.api_url,
+                headers=self.headers,
+                json=payload,
+                timeout=120  # Allow 2 minutes for completion
+            )
+            response.raise_for_status()
+            
+            # Parse the response JSON
+            result = response.json()
+            
+            if "choices" in result and len(result["choices"]) > 0:
+                result_text = result["choices"][0]["message"]["content"]
+                return json.loads(result_text)
+            else:
+                return {
+                    "error": "Invalid response format from OpenAI API",
+                    "raw_response": str(result)
+                }
+                
+        except requests.exceptions.HTTPError as http_err:
+            logger.error(f"HTTP Error with OpenAI API: {http_err}")
+            logger.error(f"Response: {http_err.response.text if hasattr(http_err, 'response') else 'No response text'}")
+            return {
+                "error": f"HTTP Error with OpenAI API: {http_err}",
+                "raw_response": http_err.response.text if hasattr(http_err, 'response') else ""
+            }
+        except requests.exceptions.Timeout as timeout_err:
+            logger.error(f"OpenAI API timeout after 120 seconds: {timeout_err}")
+            return {
+                "error": "OpenAI API timeout - request took too long",
+                "raw_response": ""
+            }
+        except Exception as e:
+            logger.error(f"Error with OpenAI API: {str(e)}")
+            return {
+                "error": f"Error with OpenAI API: {str(e)}",
+                "raw_response": ""
+            }
+
 class AnthropicLLM(BaseLLM):
     def __init__(self, api_key: str, **kwargs):
         """
@@ -333,30 +428,31 @@ class AnthropicLLM(BaseLLM):
             **kwargs: Additional arguments (ignored for compatibility)
         """
         self.api_key = api_key
-        self.api_url = "https://api.anthropic.com/v1/messages"
-        self.model = "claude-3-opus-20240229"  # Can be updated to latest model
+        self.api_url = os.getenv("ANTHROPIC_API_URL", "https://api.anthropic.com/v1/messages")
+        self.model = os.getenv("ANTHROPIC_MODEL", "claude-3-opus-20240229")
+        self.api_version = os.getenv("ANTHROPIC_API_VERSION", "2023-06-01")
         
         # Headers for Anthropic API requests - using newer authentication format
         self.headers = {
             "Content-Type": "application/json",
-            "anthropic-version": "2023-06-01"
+            "anthropic-version": self.api_version
         }
         
         # Check if the API key format is the newer style (starting with sk-ant-)
         if api_key.startswith('sk-ant-'):
             self.headers["x-api-key"] = self.api_key
-            print("Using x-api-key authentication header for Anthropic API")
+            logger.info("Using x-api-key authentication header for Anthropic API")
         else:
             # Use the Authorization header format for newer Anthropic API
             self.headers["Authorization"] = f"Bearer {self.api_key}"
-            print("Using Bearer token authentication header for Anthropic API")
+            logger.info("Using Bearer token authentication header for Anthropic API")
         
         # Log any ignored parameters for debugging
         ignored_params = [k for k in kwargs.keys() if k not in ['api_key']]
         if ignored_params:
-            print(f"Warning: The following parameters were ignored by the AnthropicLLM: {', '.join(ignored_params)}")
+            logger.warning(f"The following parameters were ignored by the AnthropicLLM: {', '.join(ignored_params)}")
             
-        print(f"Initialized Anthropic API client with model: {self.model}")
+        logger.info(f"Initialized Anthropic API client with model: {self.model}")
     
     def parse_candidate_data(self, content: str, keywords: Dict[str, List[str]]) -> Dict:
         """
@@ -417,114 +513,22 @@ class AnthropicLLM(BaseLLM):
                 }
                 
         except requests.exceptions.HTTPError as http_err:
-            print(f"ERROR in AnthropicLLM.parse_candidate_data: HTTP Error: {http_err}")
-            print(f"Response: {http_err.response.text if hasattr(http_err, 'response') else 'No response text'}")
+            logger.error(f"HTTP Error with Anthropic API: {http_err}")
+            logger.error(f"Response: {http_err.response.text if hasattr(http_err, 'response') else 'No response text'}")
             return {
                 "error": f"HTTP Error with Anthropic API: {http_err}",
                 "raw_response": http_err.response.text if hasattr(http_err, 'response') else ""
             }
         except requests.exceptions.Timeout as timeout_err:
-            print(f"ERROR in AnthropicLLM.parse_candidate_data: Anthropic API timeout after 120 seconds: {timeout_err}")
+            logger.error(f"Anthropic API timeout after 120 seconds: {timeout_err}")
             return {
                 "error": "Anthropic API timeout - request took too long",
                 "raw_response": ""
             }
         except Exception as e:
-            print(f"ERROR in AnthropicLLM.parse_candidate_data: {str(e)}")
+            logger.error(f"Error with Anthropic API: {str(e)}")
             return {
                 "error": f"Error with Anthropic API: {str(e)}",
-                "raw_response": ""
-            }
-
-# Implementation for OpenAI GPT
-class OpenAILLM(BaseLLM):
-    def __init__(self, api_key: str, **kwargs):
-        """
-        Initialize the OpenAI GPT LLM without using the OpenAI library
-        
-        Args:
-            api_key: OpenAI API key
-            **kwargs: Additional arguments (ignored for compatibility)
-        """
-        self.api_key = api_key
-        self.api_url = "https://api.openai.com/v1/chat/completions"
-        self.model = "gpt-4-turbo"  # Can be updated to latest model
-        
-        # Headers for OpenAI API requests
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-        
-        # Log any ignored parameters for debugging
-        ignored_params = [k for k in kwargs.keys() if k not in ['api_key']]
-        if ignored_params:
-            print(f"Warning: The following parameters were ignored by the OpenAILLM: {', '.join(ignored_params)}")
-    
-    def parse_candidate_data(self, content: str, keywords: Dict[str, List[str]]) -> Dict:
-        """
-        Parse content using OpenAI GPT API to extract candidate information
-        
-        Args:
-            content: The text content to parse
-            keywords: Dictionary containing must-have, should-have keywords
-            
-        Returns:
-            Dictionary with extracted candidate information
-        """
-        # Use the common prompt generator with GPT-4's token limit
-        prompt = self.generate_extraction_prompt(content, keywords, max_content_tokens=8000)
-        
-        try:
-            # Build request payload for OpenAI API
-            payload = {
-                "model": self.model,
-                "temperature": 0.1,
-                "response_format": {"type": "json_object"},
-                "messages": [
-                    {"role": "system", "content": "You are an expert AI assistant that helps extract structured information from text content about job candidates. Always respond with a valid JSON object."},
-                    {"role": "user", "content": prompt}
-                ]
-            }
-            
-            # Make direct API request
-            response = requests.post(
-                self.api_url,
-                headers=self.headers,
-                json=payload,
-                timeout=120  # Allow 2 minutes for completion
-            )
-            response.raise_for_status()
-            
-            # Parse the response JSON
-            result = response.json()
-            
-            if "choices" in result and len(result["choices"]) > 0:
-                result_text = result["choices"][0]["message"]["content"]
-                return json.loads(result_text)
-            else:
-                return {
-                    "error": "Invalid response format from OpenAI API",
-                    "raw_response": str(result)
-                }
-                
-        except requests.exceptions.HTTPError as http_err:
-            print(f"ERROR in OpenAILLM.parse_candidate_data: HTTP Error: {http_err}")
-            print(f"Response: {http_err.response.text if hasattr(http_err, 'response') else 'No response text'}")
-            return {
-                "error": f"HTTP Error with OpenAI API: {http_err}",
-                "raw_response": http_err.response.text if hasattr(http_err, 'response') else ""
-            }
-        except requests.exceptions.Timeout as timeout_err:
-            print(f"ERROR in OpenAILLM.parse_candidate_data: OpenAI API timeout after 120 seconds: {timeout_err}")
-            return {
-                "error": "OpenAI API timeout - request took too long",
-                "raw_response": ""
-            }
-        except Exception as e:
-            print(f"ERROR in OpenAILLM.parse_candidate_data: {str(e)}")
-            return {
-                "error": f"Error with OpenAI API: {str(e)}",
                 "raw_response": ""
             }
 
@@ -547,20 +551,33 @@ class LLMFactory:
         """
         if llm_type.lower() == 'llama':
             # For 'llama' type, we use OllamaLLM with the llama model
-            print("Using Llama model via Ollama API")
+            logger.info("Using Llama model via Ollama API")
             return OllamaLLM(
-                api_url=kwargs.get('api_url', 'http://localhost:11434'),
-                model_name=kwargs.get('model_name', 'llama3')
+                api_url=kwargs.get('api_url', os.getenv('OLLAMA_API_URL', 'http://localhost:11434')),
+                model_name=kwargs.get('model_name', os.getenv('OLLAMA_MODEL_NAME', 'llama3'))
             )
         elif llm_type.lower() == 'ollama':
             return OllamaLLM(
-                api_url=kwargs.get('api_url', 'http://localhost:11434'),
-                model_name=kwargs.get('model_name', 'llama3')
+                api_url=kwargs.get('api_url', os.getenv('OLLAMA_API_URL', 'http://localhost:11434')),
+                model_name=kwargs.get('model_name', os.getenv('OLLAMA_MODEL_NAME', 'llama3'))
             )
         elif llm_type.lower() == 'anthropic':
-            # Pass all kwargs to AnthropicLLM - it will handle filtering out unsupported parameters
-            return AnthropicLLM(**kwargs)
+            # Get API key from kwargs or use None to trigger an error if not provided
+            api_key = kwargs.get('api_key')
+            if not api_key:
+                raise ValueError("Anthropic API key is required. Set ANTHROPIC_API_KEY in .env file.")
+            
+            # Create a copy of kwargs without the api_key to avoid passing it twice
+            kwargs_without_api_key = {k: v for k, v in kwargs.items() if k != 'api_key'}
+            return AnthropicLLM(api_key=api_key, **kwargs_without_api_key)
         elif llm_type.lower() == 'openai':
-            return OpenAILLM(api_key=kwargs.get('api_key'))
+            # Get API key from kwargs or use None to trigger an error if not provided
+            api_key = kwargs.get('api_key')
+            if not api_key:
+                raise ValueError("OpenAI API key is required. Set OPENAI_API_KEY in .env file.")
+            
+            # Create a copy of kwargs without the api_key to avoid passing it twice
+            kwargs_without_api_key = {k: v for k, v in kwargs.items() if k != 'api_key'}
+            return OpenAILLM(api_key=api_key, **kwargs_without_api_key)
         else:
             raise ValueError(f"Unsupported LLM type: {llm_type}")
