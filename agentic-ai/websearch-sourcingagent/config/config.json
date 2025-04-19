@@ -1,0 +1,8 @@
+{
+  "google_api_key": "YOUR_GOOGLE_API_KEY",
+  "google_cse_id": "YOUR_GOOGLE_CSE_ID",
+  "openai_api_key": "YOUR_OPENAI_API_KEY",
+  "anthropic_api_key": "",
+  "request_delay": 1.0,
+  "min_results": 10
+}

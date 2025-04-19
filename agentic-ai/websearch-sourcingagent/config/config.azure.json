@@ -1,0 +1,22 @@
+{
+  "use_key_vault": true,
+  "key_vault_url": "https://yourkvcname.vault.azure.net/",
+  "logging": {
+    "application_insights": {
+      "enabled": true,
+      "connection_string": "InstrumentationKey=your-instrumentation-key;IngestionEndpoint=https://your-region.in.applicationinsights.azure.com/"
+    }
+  },
+  "search": {
+    "request_delay": 1.0,
+    "min_results": 10
+  },
+  "llm": {
+    "default_provider": "azure_openai",
+    "azure_openai": {
+      "api_version": "2023-05-15",
+      "endpoint": "https://your-azure-openai-resource.openai.azure.com/",
+      "deployment_name": "gpt-4"
+    }
+  }
+}
